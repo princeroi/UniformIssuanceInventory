@@ -1,0 +1,65 @@
+<!-- Sidebar Component -->
+<div class="sidebar">
+    <div class="sidebar-header">
+        <a href="dashboard.html" class="sidebar-brand">
+            <i class="fas fa-tshirt"></i>
+            <span>Uniform System</span>
+        </a>
+    </div>
+    <div class="sidebar-menu">
+        <a href="dashboard.html" class="menu-item" id="menu-dashboard">
+            <i class="fas fa-chart-line"></i>
+            <span>Dashboard</span>
+        </a>
+        <a href="pos.html" class="menu-item" id="menu-pos">
+            <i class="fas fa-cash-register"></i>
+            <span>POS Issuance</span>
+        </a>
+        <a href="inventory.html" class="menu-item" id="menu-inventory">
+            <i class="fas fa-boxes"></i>
+            <span>Inventory</span>
+        </a>
+        <a href="users.html" class="menu-item" id="menu-users">
+            <i class="fas fa-users"></i>
+            <span>Users</span>
+        </a>
+        <a href="reports.html" class="menu-item" id="menu-reports">
+            <i class="fas fa-file-alt"></i>
+            <span>Reports</span>
+        </a>
+        <a href="history.html" class="menu-item" id="menu-history">
+            <i class="fas fa-history"></i>
+            <span>History</span>
+        </a>
+        <a href="settings.html" class="menu-item" id="menu-settings">
+            <i class="fas fa-cog"></i>
+            <span>Settings</span>
+        </a>
+        <a href="login.html" class="menu-item" id="menu-logout">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Logout</span>
+        </a>
+    </div>
+</div>
+
+<script>
+    // Auto-activate menu based on current page
+    document.addEventListener('DOMContentLoaded', function() {
+        const currentPage = window.location.pathname.split('/').pop();
+        const menuItems = document.querySelectorAll('.menu-item');
+        
+        menuItems.forEach(item => {
+            const href = item.getAttribute('href');
+            if (href === currentPage) {
+                item.classList.add('active');
+            } else {
+                item.classList.remove('active');
+            }
+        });
+        
+        // If no page matches (e.g., index.html or root), activate dashboard
+        if (!document.querySelector('.menu-item.active')) {
+            document.getElementById('menu-dashboard').classList.add('active');
+        }
+    });
+</script>

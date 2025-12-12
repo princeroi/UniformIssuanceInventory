@@ -1,0 +1,148 @@
+<div class="page-header">
+    <h1 class="page-title">Dashboard</h1>
+    <p class="page-subtitle">Welcome back! Here's an overview of your inventory system.</p>
+</div>
+
+<!-- Stats Cards Row -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="stats-card" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);">
+            <div class="stats-card-icon">
+                <i class="fas fa-boxes"></i>
+            </div>
+            <div class="stats-card-value">0</div>
+            <div class="stats-card-label">Total Items</div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="stats-card" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">
+            <div class="stats-card-icon">
+                <i class="fas fa-hand-holding"></i>
+            </div>
+            <div class="stats-card-value">0</div>
+            <div class="stats-card-label">Issuances (2024)</div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="stats-card" style="background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);">
+            <div class="stats-card-icon">
+                <i class="fas fa-truck"></i>
+            </div>
+            <div class="stats-card-value">0</div>
+            <div class="stats-card-label">Total Deliveries</div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="stats-card" style="background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);">
+            <div class="stats-card-icon">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div class="stats-card-value">0</div>
+            <div class="stats-card-label">Low Stock Items</div>
+        </div>
+    </div>
+</div>
+
+<!-- Charts and Tables Row -->
+<div class="row g-4">
+    <!-- Recent Issuances -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Recent Issuances</h5>
+                <a href="?page=issuance" class="btn btn-sm btn-primary">View All</a>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Transaction ID</th>
+                                <th>Category - Size</th>
+                                <th>Item</th>
+                                <th>Quantity</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td colspan="6" class="text-center">
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div> Loading...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Low Stock Alerts -->
+    <div class="col-lg-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Low Stock Alerts</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center py-3">
+                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                        <span class="visually-hidden">Loading...</span>
+                    </div>
+                    <p class="mt-2 mb-0">Loading alerts...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row g-4 mt-2">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-3">
+                        <button class="btn btn-outline-primary w-100 py-3" onclick="window.location.href='?page=issuance'">
+                            <i class="fas fa-plus-circle fa-2x mb-2"></i><br>
+                            New Issuance
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-outline-success w-100 py-3" onclick="window.location.href='?page=delivery'">
+                            <i class="fas fa-truck fa-2x mb-2"></i><br>
+                            New Delivery
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-outline-info w-100 py-3" onclick="window.location.href='?page=inventory'">
+                            <i class="fas fa-box fa-2x mb-2"></i><br>
+                            View Inventory
+                        </button>
+                    </div>
+                    <div class="col-md-3">
+                        <button class="btn btn-outline-warning w-100 py-3" onclick="window.location.href='?page=reports'">
+                            <i class="fas fa-file-alt fa-2x mb-2"></i><br>
+                            Generate Report
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Initialize dashboard when page loads
+    if (typeof init_dashboard === 'function') {
+        init_dashboard();
+    }
+</script>

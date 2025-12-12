@@ -1,0 +1,84 @@
+[02-Dec-2025 07:20:32 Europe/Berlin] PHP Warning:  Undefined variable $host in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 07:20:32 Europe/Berlin] PHP Warning:  Undefined variable $user in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 07:20:32 Europe/Berlin] PHP Warning:  Undefined variable $pass in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 07:20:32 Europe/Berlin] PHP Warning:  Undefined variable $db in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 07:20:32 Europe/Berlin] PHP Fatal error:  Uncaught mysqli_sql_exception: No database selected in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php:15
+Stack trace:
+#0 C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php(15): mysqli->query('SELECT id, role...')
+#1 {main}
+  thrown in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 15
+[02-Dec-2025 07:20:58 Europe/Berlin] PHP Warning:  Undefined variable $host in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 07:20:58 Europe/Berlin] PHP Warning:  Undefined variable $user in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 07:20:58 Europe/Berlin] PHP Warning:  Undefined variable $pass in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 07:20:58 Europe/Berlin] PHP Warning:  Undefined variable $db in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 07:20:58 Europe/Berlin] PHP Fatal error:  Uncaught mysqli_sql_exception: No database selected in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php:15
+Stack trace:
+#0 C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php(15): mysqli->query('SELECT id, role...')
+#1 {main}
+  thrown in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 15
+[02-Dec-2025 07:22:35 Europe/Berlin] PHP Warning:  Undefined variable $host in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 07:22:35 Europe/Berlin] PHP Warning:  Undefined variable $user in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 07:22:35 Europe/Berlin] PHP Warning:  Undefined variable $pass in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 07:22:35 Europe/Berlin] PHP Warning:  Undefined variable $db in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 07:22:35 Europe/Berlin] PHP Fatal error:  Uncaught mysqli_sql_exception: No database selected in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php:15
+Stack trace:
+#0 C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php(15): mysqli->query('SELECT id, role...')
+#1 {main}
+  thrown in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 15
+[02-Dec-2025 07:23:16 Europe/Berlin] PHP Warning:  Undefined variable $host in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 07:23:16 Europe/Berlin] PHP Warning:  Undefined variable $user in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 07:23:16 Europe/Berlin] PHP Warning:  Undefined variable $pass in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 07:23:16 Europe/Berlin] PHP Warning:  Undefined variable $db in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 07:23:16 Europe/Berlin] PHP Fatal error:  Uncaught mysqli_sql_exception: No database selected in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php:15
+Stack trace:
+#0 C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php(15): mysqli->query('SELECT id, role...')
+#1 {main}
+  thrown in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 15
+[02-Dec-2025 14:25:28 Asia/Manila] PHP Warning:  Undefined variable $host in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 14:25:28 Asia/Manila] PHP Warning:  Undefined variable $user in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 14:25:28 Asia/Manila] PHP Warning:  Undefined variable $pass in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 14:25:28 Asia/Manila] PHP Warning:  Undefined variable $db in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 7
+[02-Dec-2025 14:25:28 Asia/Manila] PHP Fatal error:  Uncaught mysqli_sql_exception: No database selected in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php:15
+Stack trace:
+#0 C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php(15): mysqli->query('SELECT id, role...')
+#1 {main}
+  thrown in C:\xampp\htdocs\UniformIssuanceInventory\controller\fetchRolesDepartments.php on line 15
+[02-Dec-2025 14:29:02 Asia/Manila] PHP Warning:  Undefined variable $conn in C:\xampp\htdocs\UniformIssuanceInventory\controller\user-management.php on line 26
+[02-Dec-2025 14:29:02 Asia/Manila] PHP Fatal error:  Uncaught Error: Call to a member function query() on null in C:\xampp\htdocs\UniformIssuanceInventory\controller\user-management.php:265
+Stack trace:
+#0 C:\xampp\htdocs\UniformIssuanceInventory\controller\user-management.php(26): getAllUsers(NULL)
+#1 {main}
+  thrown in C:\xampp\htdocs\UniformIssuanceInventory\controller\user-management.php on line 265
+[02-Dec-2025 14:31:04 Asia/Manila] PHP Warning:  Undefined variable $conn in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php on line 26
+[02-Dec-2025 14:31:04 Asia/Manila] PHP Fatal error:  Uncaught Error: Call to a member function query() on null in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php:265
+Stack trace:
+#0 C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php(26): getAllUsers(NULL)
+#1 {main}
+  thrown in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php on line 265
+[02-Dec-2025 14:31:04 Asia/Manila] PHP Warning:  Undefined variable $conn in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php on line 26
+[02-Dec-2025 14:31:04 Asia/Manila] PHP Fatal error:  Uncaught Error: Call to a member function query() on null in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php:265
+Stack trace:
+#0 C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php(26): getAllUsers(NULL)
+#1 {main}
+  thrown in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php on line 265
+[02-Dec-2025 14:31:11 Asia/Manila] PHP Warning:  Undefined variable $conn in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php on line 14
+[02-Dec-2025 14:31:11 Asia/Manila] PHP Warning:  Undefined variable $conn in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php on line 340
+[02-Dec-2025 14:31:11 Asia/Manila] PHP Fatal error:  Uncaught Error: Call to a member function close() on null in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php:340
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php on line 340
+[02-Dec-2025 14:51:11 Asia/Manila] PHP Warning:  Undefined variable $defaultPassword in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php on line 80
+[02-Dec-2025 14:51:20 Asia/Manila] PHP Warning:  Undefined variable $defaultPassword in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php on line 80
+[02-Dec-2025 14:51:43 Asia/Manila] PHP Warning:  Undefined variable $defaultPassword in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php on line 80
+[02-Dec-2025 14:53:15 Asia/Manila] PHP Fatal error:  Uncaught Error: Call to undefined function getSingleUser() in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php:29
+Stack trace:
+#0 {main}
+  thrown in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php on line 29
+[02-Dec-2025 15:14:00 Asia/Manila] PHP Warning:  Undefined array key "password_encrypted" in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php on line 331
+[02-Dec-2025 15:17:49 Asia/Manila] PHP Warning:  Undefined array key 1 in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php on line 61
+[02-Dec-2025 15:17:49 Asia/Manila] PHP Deprecated:  openssl_decrypt(): Passing null to parameter #5 ($iv) of type string is deprecated in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php on line 62
+[02-Dec-2025 15:18:48 Asia/Manila] PHP Warning:  Undefined array key 1 in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php on line 61
+[02-Dec-2025 15:18:48 Asia/Manila] PHP Deprecated:  openssl_decrypt(): Passing null to parameter #5 ($iv) of type string is deprecated in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php on line 62
+[02-Dec-2025 15:18:59 Asia/Manila] PHP Warning:  Undefined array key 1 in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php on line 61
+[02-Dec-2025 15:18:59 Asia/Manila] PHP Deprecated:  openssl_decrypt(): Passing null to parameter #5 ($iv) of type string is deprecated in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php on line 62
+[02-Dec-2025 15:51:34 Asia/Manila] PHP Warning:  openssl_decrypt(): IV passed is only 11 bytes long, cipher expects an IV of precisely 16 bytes, padding with \0 in C:\xampp\htdocs\UniformIssuanceInventory\controller\userController.php on line 67

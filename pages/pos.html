@@ -1,0 +1,166 @@
+<div class="page-header">
+    <h1 class="page-title">Point of Sale</h1>
+    <p class="page-subtitle">Process uniform sales and transactions</p>
+</div>
+
+<div class="row g-4">
+    <!-- Product Selection -->
+    <div class="col-lg-8">
+        <div class="card">
+            <div class="card-header">
+                <!-- Search Bar -->
+                <div class="row mb-3">
+                    <div class="col-12">
+                        <input type="text" class="form-control" id="searchInput" 
+                               placeholder="Search products by name or code...">
+                    </div>
+                </div>
+                
+                <!-- Category Buttons -->
+                <div class="row">
+                    <div class="col-12">
+                        <div class="btn-group flex-wrap" role="group">
+                            <button type="button" class="btn btn-outline-primary category-btn active" data-category="All Categories">
+                                <i class="fas fa-th me-1"></i> All Items
+                            </button>
+                            <button type="button" class="btn btn-outline-primary category-btn" data-category="Polo">
+                                <i class="fas fa-tshirt me-1"></i> Polo
+                            </button>
+                            <button type="button" class="btn btn-outline-primary category-btn" data-category="Polo Shirt">
+                                <i class="fas fa-tshirt me-1"></i> Polo Shirt
+                            </button>
+                            <button type="button" class="btn btn-outline-primary category-btn" data-category="T-Shirt">
+                                <i class="fas fa-tshirt me-1"></i> T-Shirt
+                            </button>
+                            <button type="button" class="btn btn-outline-primary category-btn" data-category="Long Sleeve">
+                                <i class="fas fa-tshirt me-1"></i> Long Sleeve
+                            </button>
+                            <button type="button" class="btn btn-outline-primary category-btn" data-category="Pants">
+                                <i class="fas fa-user-tie me-1"></i> Pants
+                            </button>
+                            <button type="button" class="btn btn-outline-primary category-btn" data-category="ID Lace">
+                                <i class="fas fa-id-card me-1"></i> ID Lace
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body" style="max-height: 600px; overflow-y: auto;">
+                <div class="row g-3" id="productsContainer">
+                    <!-- Products will be loaded here dynamically -->
+                    <div class="col-12 text-center">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Loading...</span>
+                        </div>
+                        <p class="mt-2">Loading products...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Shopping Cart & Checkout -->
+    <div class="col-lg-4">
+        <div class="card sticky-top" style="top: 20px;">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-shopping-cart"></i> Current Transaction</h5>
+            </div>
+            <div class="card-body">
+                <!-- Employee Name -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Employee Name</label>
+                    <input type="text" class="form-control" id="employeeName" 
+                           placeholder="Enter employee name" required>
+                </div>
+                
+                <!-- Cart Items -->
+                <div class="mb-3" style="max-height: 300px; overflow-y: auto;" id="cartItems">
+                    <div class="alert alert-info text-center">
+                        <i class="fas fa-shopping-basket fa-2x mb-2"></i>
+                        <p class="mb-0">Cart is empty</p>
+                    </div>
+                </div>
+                
+                <!-- Summary -->
+                <div class="border-top pt-3">
+                    <div class="d-flex justify-content-between mb-3">
+                        <h6>Total Items:</h6>
+                        <h6 class="text-primary" id="totalItems">0</h6>
+                    </div>
+                    
+                    <!-- Issuance Type -->
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Issuance Type</label>
+                        <select class="form-select" id="issuanceType">
+                            <option>New Hire</option>
+                            <option>Additional</option>
+                            <option>Annual Issuance</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Action Buttons -->
+                    <button class="btn btn-success w-100 mb-2" id="completeTransactionBtn" 
+                            onclick="showConfirmationModal()" disabled>
+                        <i class="fas fa-check-circle"></i> Complete Transaction
+                    </button>
+                    <button class="btn btn-outline-danger w-100" onclick="clearCart()">
+                        <i class="fas fa-times"></i> Clear Cart
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .category-btn {
+        margin-bottom: 0.5rem;
+    }
+    
+    .category-btn.active {
+        background-color: #0d6efd;
+        color: white;
+        border-color: #0d6efd;
+    }
+    
+    .product-card {
+        transition: transform 0.2s, box-shadow 0.2s;
+        cursor: pointer;
+    }
+    
+    .product-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+</style>
+
+<script>
+    // Initialize POS when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof init_pos === 'function') {
+            init_pos();
+        }
+    });
+</script>
