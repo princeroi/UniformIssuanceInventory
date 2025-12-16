@@ -1,426 +1,103 @@
-<div class="page-header">
+<div class="page-header mb-4">
     <h1 class="page-title">System Settings</h1>
-    <p class="page-subtitle">Configure system preferences and options</p>
+    <p class="page-subtitle text-muted">Configure system preferences and options</p>
 </div>
 
 <div class="row g-4">
-    <!-- Settings Navigation -->
+    <!-- Sidebar Navigation -->
     <div class="col-lg-3">
-        <div class="card">
+        <div class="card shadow-sm position-sticky" style="top: 20px;">
             <div class="card-body p-0">
                 <div class="list-group list-group-flush">
-                    <a href="#general" class="list-group-item list-group-item-action active">
+                    <a href="#" class="list-group-item list-group-item-action active" data-target="general">
                         <i class="fas fa-cog me-2"></i> General Settings
                     </a>
-                    <a href="#notifications" class="list-group-item list-group-item-action">
+                    <a href="#" class="list-group-item list-group-item-action" data-target="notifications">
                         <i class="fas fa-bell me-2"></i> Notifications
                     </a>
-                    <a href="#security" class="list-group-item list-group-item-action">
+                    <a href="#" class="list-group-item list-group-item-action" data-target="security">
                         <i class="fas fa-shield-alt me-2"></i> Security
                     </a>
-                    <a href="#inventory" class="list-group-item list-group-item-action">
-                        <i class="fas fa-boxes me-2"></i> Inventory Settings
-                    </a>
-                    <a href="#backup" class="list-group-item list-group-item-action">
+                    <a href="#" class="list-group-item list-group-item-action" data-target="backup">
                         <i class="fas fa-database me-2"></i> Backup & Restore
                     </a>
-                    <a href="#system" class="list-group-item list-group-item-action">
+                    <a href="#" class="list-group-item list-group-item-action" data-target="system">
                         <i class="fas fa-server me-2"></i> System Info
                     </a>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <!-- Settings Content -->
     <div class="col-lg-9">
-        <!-- General Settings -->
-        <div class="card mb-4" id="general">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-cog me-2"></i>General Settings</h5>
-            </div>
-            <div class="card-body">
-                <form>
-                    <div class="mb-3">
-                        <label class="form-label">Company Name</label>
-                        <input type="text" class="form-control" value="ABC Corporation">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">System Email</label>
-                        <input type="email" class="form-control" value="system@company.com">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Time Zone</label>
-                        <select class="form-select">
-                            <option>Asia/Manila (GMT+8)</option>
-                            <option>Asia/Tokyo (GMT+9)</option>
-                            <option>America/New_York (GMT-5)</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Date Format</label>
-                        <select class="form-select">
-                            <option>MM/DD/YYYY</option>
-                            <option>DD/MM/YYYY</option>
-                            <option>YYYY-MM-DD</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Currency</label>
-                        <select class="form-select">
-                            <option>PHP (₱)</option>
-                            <option>USD ($)</option>
-                            <option>EUR (€)</option>
-                        </select>
-                    </div>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Save Changes
-                    </button>
-                </form>
-            </div>
-        </div>
-        
-        <!-- Notification Settings -->
-        <div class="card mb-4" id="notifications">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-bell me-2"></i>Notification Settings</h5>
-            </div>
-            <div class="card-body">
-                <form>
-                    <h6 class="mb-3">Email Notifications</h6>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" id="emailLowStock" checked>
-                        <label class="form-check-label" for="emailLowStock">
-                            Low stock alerts
-                        </label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" id="emailNewDelivery" checked>
-                        <label class="form-check-label" for="emailNewDelivery">
-                            New delivery notifications
-                        </label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" id="emailIssuance">
-                        <label class="form-check-label" for="emailIssuance">
-                            Issuance updates
-                        </label>
-                    </div>
-                    <div class="form-check mb-4">
-                        <input class="form-check-input" type="checkbox" id="emailReports" checked>
-                        <label class="form-check-label" for="emailReports">
-                            Weekly reports
-                        </label>
-                    </div>
-                    
-                    <h6 class="mb-3">System Notifications</h6>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" id="sysUserActivity" checked>
-                        <label class="form-check-label" for="sysUserActivity">
-                            User activity alerts
-                        </label>
-                    </div>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" id="sysSystemUpdates" checked>
-                        <label class="form-check-label" for="sysSystemUpdates">
-                            System updates
-                        </label>
-                    </div>
-                    <div class="form-check mb-4">
-                        <input class="form-check-input" type="checkbox" id="sysBackupStatus" checked>
-                        <label class="form-check-label" for="sysBackupStatus">
-                            Backup status notifications
-                        </label>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Save Changes
-                    </button>
-                </form>
-            </div>
-        </div>
-        
-        <!-- Security Settings -->
-        <div class="card mb-4" id="security">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-shield-alt me-2"></i>Security Settings</h5>
-            </div>
-            <div class="card-body">
-                <form>
-                    <div class="mb-3">
-                        <label class="form-label">Password Policy</label>
-                        <select class="form-select">
-                            <option>Strong (12+ chars, mixed case, numbers, symbols)</option>
-                            <option>Medium (8+ chars, mixed case, numbers)</option>
-                            <option>Basic (6+ chars)</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Session Timeout (minutes)</label>
-                        <input type="number" class="form-control" value="30" min="5" max="120">
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Maximum Login Attempts</label>
-                        <input type="number" class="form-control" value="5" min="3" max="10">
-                    </div>
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="twoFactor">
-                        <label class="form-check-label" for="twoFactor">
-                            Enable Two-Factor Authentication
-                        </label>
-                    </div>
-                    <div class="form-check mb-4">
-                        <input class="form-check-input" type="checkbox" id="ipWhitelist">
-                        <label class="form-check-label" for="ipWhitelist">
-                            Enable IP Whitelisting
-                        </label>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Save Changes
-                    </button>
-                </form>
-            </div>
-        </div>
-        
-        <!-- Inventory Settings -->
-        <div class="card mb-4" id="inventory">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-boxes me-2"></i>Inventory Settings</h5>
-            </div>
-            <div class="card-body">
-                <form>
-                    <div class="mb-3">
-                        <label class="form-label">Low Stock Threshold (%)</label>
-                        <input type="number" class="form-control" value="20" min="5" max="50">
-                        <small class="text-muted">Alert when stock falls below this percentage of minimum stock level</small>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Auto-Reorder Point</label>
-                        <select class="form-select">
-                            <option>Enabled</option>
-                            <option>Disabled</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Default Reorder Quantity</label>
-                        <input type="number" class="form-control" value="100" min="1">
-                    </div>
-                    <div class="form-check mb-3">
-                        <input class="form-check-input" type="checkbox" id="trackBatches" checked>
-                        <label class="form-check-label" for="trackBatches">
-                            Track batch/lot numbers
-                        </label>
-                    </div>
-                    <div class="form-check mb-4">
-                        <input class="form-check-input" type="checkbox" id="trackExpiry">
-                        <label class="form-check-label" for="trackExpiry">
-                            Track expiry dates
-                        </label>
-                    </div>
-                    
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-save"></i> Save Changes
-                    </button>
-                </form>
-            </div>
-        </div>
-        
-        <!-- Backup & Restore -->
-        <div class="card mb-4" id="backup">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-database me-2"></i>Backup & Restore</h5>
-            </div>
-            <div class="card-body">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle me-2"></i>
-                    Last backup: December 02, 2024 at 02:00 AM
+        <div class="settings-section" id="general">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-cog me-2"></i> General Settings</h5>
                 </div>
-                
-                <form>
-                    <div class="mb-3">
-                        <label class="form-label">Automatic Backup Schedule</label>
-                        <select class="form-select">
-                            <option>Daily at 2:00 AM</option>
-                            <option>Weekly on Sunday at 2:00 AM</option>
-                            <option>Monthly on 1st at 2:00 AM</option>
-                            <option>Disabled</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Backup Retention (days)</label>
-                        <input type="number" class="form-control" value="30" min="7" max="365">
-                    </div>
-                    <div class="form-check mb-4">
-                        <input class="form-check-input" type="checkbox" id="cloudBackup" checked>
-                        <label class="form-check-label" for="cloudBackup">
-                            Enable cloud backup
-                        </label>
-                    </div>
-                    
-                    <div class="d-flex gap-2">
-                        <button type="button" class="btn btn-primary">
-                            <i class="fas fa-download"></i> Backup Now
-                        </button>
-                        <button type="button" class="btn btn-success">
-                            <i class="fas fa-upload"></i> Restore
-                        </button>
-                        <button type="submit" class="btn btn-secondary">
-                            <i class="fas fa-save"></i> Save Settings
-                        </button>
-                    </div>
-                </form>
+                <div class="card-body">
+                    <!-- General Settings Form -->
+                </div>
             </div>
         </div>
-        
-        <!-- System Information -->
-        <div class="card" id="system">
-            <div class="card-header">
-                <h5 class="mb-0"><i class="fas fa-server me-2"></i>System Information</h5>
-            </div>
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-6">
-                        <strong>System Version:</strong>
-                        <p class="text-muted mb-0">v2.5.1</p>
-                    </div>
-                    <div class="col-md-6">
-                        <strong>Database Version:</strong>
-                        <p class="text-muted mb-0">MySQL 8.0.32</p>
-                    </div>
-                    <div class="col-md-6">
-                        <strong>PHP Version:</strong>
-                        <p class="text-muted mb-0">8.2.4</p>
-                    </div>
-                    <div class="col-md-6">
-                        <strong>Server OS:</strong>
-                        <p class="text-muted mb-0">Ubuntu 22.04 LTS</p>
-                    </div>
-                    <div class="col-md-6">
-                        <strong>Total Storage:</strong>
-                        <p class="text-muted mb-0">500 GB</p>
-                    </div>
-                    <div class="col-md-6">
-                        <strong>Used Storage:</strong>
-                        <p class="text-muted mb-0">125 GB (25%)</p>
-                    </div>
-                    <div class="col-md-6">
-                        <strong>License Type:</strong>
-                        <p class="text-muted mb-0">Enterprise</p>
-                    </div>
-                    <div class="col-md-6">
-                        <strong>License Expires:</strong>
-                        <p class="text-muted mb-0">December 31, 2025</p>
-                    </div>
+
+        <div class="settings-section d-none" id="notifications">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-info text-white">
+                    <h5><i class="fas fa-bell me-2"></i> Notification Settings</h5>
                 </div>
-                
-                <hr>
-                
-                <div class="d-flex gap-2">
-                    <button class="btn btn-outline-primary">
-                        <i class="fas fa-sync"></i> Check for Updates
-                    </button>
-                    <button class="btn btn-outline-info">
-                        <i class="fas fa-chart-bar"></i> System Health
-                    </button>
-                    <button class="btn btn-outline-success">
-                        <i class="fas fa-file-alt"></i> View Logs
-                    </button>
+                <div class="card-body">
+                    <!-- Notification Form -->
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section d-none" id="security">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-warning text-dark">
+                    <h5><i class="fas fa-shield-alt me-2"></i> Security Settings</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Security Form -->
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section d-none" id="backup">
+            <div class="card mb-4 shadow-sm">
+                <div class="card-header bg-success text-white">
+                    <h5><i class="fas fa-database me-2"></i> Backup & Restore</h5>
+                </div>
+                <div class="card-body">
+                    <!-- Backup Form -->
+                </div>
+            </div>
+        </div>
+
+        <div class="settings-section d-none" id="system">
+            <div class="card shadow-sm">
+                <div class="card-header bg-secondary text-white">
+                    <h5><i class="fas fa-server me-2"></i> System Information</h5>
+                </div>
+                <div class="card-body">
+                    <!-- System Info Content -->
                 </div>
             </div>
         </div>
     </div>
 </div>
+<style>
+    .settings-section {
+    opacity: 0;
+    transform: translateX(30px);
+    transition: all 0.4s ease;
+    height: auto;
+}
 
-<script>
-    // Settings tab navigation functionality
-    document.addEventListener('DOMContentLoaded', function() {
-        const tabLinks = document.querySelectorAll('.list-group-item-action');
-        
-        // Handle tab clicks
-        tabLinks.forEach(link => {
-            link.addEventListener('click', function(e) {
-                e.preventDefault();
-                
-                // Remove active class from all tabs
-                tabLinks.forEach(tab => tab.classList.remove('active'));
-                
-                // Add active class to clicked tab
-                this.classList.add('active');
-                
-                // Get target section
-                const targetId = this.getAttribute('href');
-                const targetSection = document.querySelector(targetId);
-                
-                // Smooth scroll to section
-                if (targetSection) {
-                    targetSection.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'start'
-                    });
-                }
-            });
-        });
-        
-        // Highlight active tab based on scroll position
-        const sections = document.querySelectorAll('.card[id]');
-        
-        window.addEventListener('scroll', function() {
-            let current = '';
-            
-            sections.forEach(section => {
-                const sectionTop = section.offsetTop;
-                const sectionHeight = section.clientHeight;
-                
-                if (pageYOffset >= sectionTop - 200) {
-                    current = section.getAttribute('id');
-                }
-            });
-            
-            tabLinks.forEach(link => {
-                link.classList.remove('active');
-                if (link.getAttribute('href') === '#' + current) {
-                    link.classList.add('active');
-                }
-            });
-        });
-        
-        // Form submission handlers with success messages
-        const forms = document.querySelectorAll('form');
-        forms.forEach(form => {
-            form.addEventListener('submit', function(e) {
-                e.preventDefault();
-                
-                const submitBtn = this.querySelector('button[type="submit"]');
-                const originalText = submitBtn.innerHTML;
-                
-                // Show loading state
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-                submitBtn.disabled = true;
-                
-                // Simulate save (replace with actual API call)
-                setTimeout(() => {
-                    // Show success message
-                    const alert = document.createElement('div');
-                    alert.className = 'alert alert-success alert-dismissible fade show';
-                    alert.innerHTML = `
-                        <i class="fas fa-check-circle me-2"></i>
-                        Settings saved successfully!
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                    `;
-                    
-                    this.insertBefore(alert, this.firstChild);
-                    
-                    // Restore button
-                    submitBtn.innerHTML = originalText;
-                    submitBtn.disabled = false;
-                    
-                    // Auto-dismiss after 3 seconds
-                    setTimeout(() => {
-                        alert.remove();
-                    }, 3000);
-                }, 1000);
-            });
-        });
-    });
-</script>
+.settings-section.active {
+    opacity: 1;
+    transform: translateX(0);
+}
+
+</style>

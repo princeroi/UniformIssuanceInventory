@@ -11,14 +11,10 @@ function sendResponse($success, $message, $data = null) {
     exit;
 }
 
-/**
- * Generate unique transaction number
- */
 function generateTransactionNumber($pdo) {
     $prefix = 'DEL';
     $date = date('Ymd');
     
-    // Get the last transaction number for today
     $stmt = $pdo->prepare("
         SELECT transaction_number 
         FROM deliveries 
@@ -30,7 +26,6 @@ function generateTransactionNumber($pdo) {
     $lastTxn = $stmt->fetchColumn();
     
     if ($lastTxn) {
-        // Extract the sequence number and increment
         $sequence = intval(substr($lastTxn, -4)) + 1;
     } else {
         $sequence = 1;
@@ -69,6 +64,10 @@ try {
             getItems($pdo);
             break;
             
+        case 'getDeliveryHistory':
+            getDeliveryHistory($pdo);
+            break;
+            
         default:
             sendResponse(false, "Invalid action");
             break;
@@ -77,9 +76,6 @@ try {
     sendResponse(false, "Database error: " . $e->getMessage());
 }
 
-/**
- * Create new delivery
- */
 function createDelivery($pdo) {
     $item_code = $_POST['item_code'] ?? '';
     $quantity = intval($_POST['quantity'] ?? 0);
@@ -99,7 +95,6 @@ function createDelivery($pdo) {
     if (!empty($errors)) sendResponse(false, implode(", ", $errors));
     
     try {
-        // Get item details
         $stmt = $pdo->prepare("SELECT item_name, category, size FROM items WHERE item_code = ?");
         $stmt->execute([$item_code]);
         $item = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -108,18 +103,15 @@ function createDelivery($pdo) {
             sendResponse(false, 'Item not found');
         }
         
-        // Generate transaction number
         $transaction_number = generateTransactionNumber($pdo);
-        
-        // Calculate expected date from order date
         $expected_date = date('Y-m-d', strtotime($order_date . " +{$expected_days} days"));
         
-        // Insert delivery
         $stmt = $pdo->prepare("
             INSERT INTO deliveries 
-            (transaction_number, item_code, item_name, category, size, quantity, supplier, 
-             received_by, order_date, expected_date, notes, delivery_status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending')
+            (transaction_number, item_code, item_name, category, size, quantity, 
+             quantity_ordered, quantity_delivered, quantity_pending,
+             supplier, received_by, order_date, expected_date, notes, delivery_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?, ?, ?, ?, ?, 'Pending')
         ");
         
         $inserted = $stmt->execute([
@@ -128,6 +120,8 @@ function createDelivery($pdo) {
             $item['item_name'],
             $item['category'],
             $item['size'],
+            $quantity,
+            $quantity,
             $quantity,
             $supplier,
             $received_by,
@@ -149,9 +143,6 @@ function createDelivery($pdo) {
     }
 }
 
-/**
- * Get all deliveries
- */
 function getDeliveries($pdo) {
     try {
         $status = $_GET['status'] ?? 'all';
@@ -180,9 +171,6 @@ function getDeliveries($pdo) {
     }
 }
 
-/**
- * Get single delivery by ID
- */
 function getDeliveryById($pdo) {
     $id = $_GET['id'] ?? '';
     
@@ -205,59 +193,89 @@ function getDeliveryById($pdo) {
     }
 }
 
-/**
- * Mark delivery as delivered and update inventory
- */
 function markAsDelivered($pdo) {
     $id = $_POST['id'] ?? '';
+    $quantity_to_deliver = intval($_POST['quantity_to_deliver'] ?? 0);
+    $delivery_notes = $_POST['delivery_notes'] ?? '';
     
     if (!$id) {
         sendResponse(false, 'Delivery ID is required');
     }
     
+    if ($quantity_to_deliver <= 0) {
+        sendResponse(false, 'Quantity to deliver must be greater than 0');
+    }
+    
     try {
         $pdo->beginTransaction();
         
-        // Get delivery details
-        $stmt = $pdo->prepare("SELECT * FROM deliveries WHERE id = ? AND delivery_status = 'Pending'");
+        $stmt = $pdo->prepare("SELECT * FROM deliveries WHERE id = ?");
         $stmt->execute([$id]);
         $delivery = $stmt->fetch(PDO::FETCH_ASSOC);
         
         if (!$delivery) {
             $pdo->rollBack();
-            sendResponse(false, 'Delivery not found or already delivered');
+            sendResponse(false, 'Delivery not found');
         }
         
-        // Update delivery status
+        if ($delivery['quantity_pending'] <= 0) {
+            $pdo->rollBack();
+            sendResponse(false, 'No pending quantity to deliver');
+        }
+        
+        if ($quantity_to_deliver > $delivery['quantity_pending']) {
+            $pdo->rollBack();
+            sendResponse(false, 'Quantity to deliver exceeds pending quantity');
+        }
+        
+        $new_delivered = $delivery['quantity_delivered'] + $quantity_to_deliver;
+        $new_pending = $delivery['quantity_pending'] - $quantity_to_deliver;
+        
+        $new_status = $new_pending > 0 ? 'Partial' : 'Delivered';
+        
         $stmt = $pdo->prepare("
             UPDATE deliveries 
-            SET delivery_status = 'Delivered', 
-                delivered_date = NOW()
+            SET quantity_delivered = ?,
+                quantity_pending = ?,
+                delivery_status = ?,
+                delivered_date = CASE WHEN ? = 'Delivered' THEN NOW() ELSE delivered_date END
             WHERE id = ?
         ");
-        $stmt->execute([$id]);
+        $stmt->execute([$new_delivered, $new_pending, $new_status, $new_status, $id]);
         
-        // Update inventory quantity
+        $stmt = $pdo->prepare("
+            INSERT INTO delivery_history 
+            (delivery_id, transaction_number, quantity_delivered, notes)
+            VALUES (?, ?, ?, ?)
+        ");
+        $stmt->execute([
+            $id,
+            $delivery['transaction_number'],
+            $quantity_to_deliver,
+            $delivery_notes
+        ]);
+        
         $stmt = $pdo->prepare("
             UPDATE items 
             SET quantity = quantity + ?
             WHERE item_code = ?
         ");
-        $stmt->execute([$delivery['quantity'], $delivery['item_code']]);
+        $stmt->execute([$quantity_to_deliver, $delivery['item_code']]);
         
         $pdo->commit();
         
-        sendResponse(true, 'Delivery marked as delivered and inventory updated');
+        sendResponse(true, 'Delivery processed successfully', [
+            'status' => $new_status,
+            'delivered' => $new_delivered,
+            'pending' => $new_pending
+        ]);
         
     } catch (PDOException $e) {
         $pdo->rollBack();
-        sendResponse(false, 'Failed to mark as delivered: ' . $e->getMessage());
+        sendResponse(false, 'Failed to process delivery: ' . $e->getMessage());
     }
 }
 
-/**
- * Delete delivery (only if pending)
- */
 function deleteDelivery($pdo) {
     $id = $_POST['id'] ?? '';
     
@@ -266,8 +284,7 @@ function deleteDelivery($pdo) {
     }
     
     try {
-        // Check if delivery is pending
-        $stmt = $pdo->prepare("SELECT delivery_status FROM deliveries WHERE id = ?");
+        $stmt = $pdo->prepare("SELECT delivery_status, quantity_delivered FROM deliveries WHERE id = ?");
         $stmt->execute([$id]);
         $delivery = $stmt->fetch(PDO::FETCH_ASSOC);
         
@@ -275,11 +292,10 @@ function deleteDelivery($pdo) {
             sendResponse(false, 'Delivery not found');
         }
         
-        if ($delivery['delivery_status'] === 'Delivered') {
-            sendResponse(false, 'Cannot delete a delivered order');
+        if ($delivery['quantity_delivered'] > 0) {
+            sendResponse(false, 'Cannot delete a delivery with delivered items. Please contact administrator.');
         }
         
-        // Delete delivery
         $stmt = $pdo->prepare("DELETE FROM deliveries WHERE id = ?");
         $deleted = $stmt->execute([$id]);
         
@@ -294,9 +310,6 @@ function deleteDelivery($pdo) {
     }
 }
 
-/**
- * Get items for dropdown
- */
 function getItems($pdo) {
     try {
         $stmt = $pdo->query("SELECT item_code, item_name, category, size FROM items ORDER BY item_name");
@@ -304,5 +317,26 @@ function getItems($pdo) {
         sendResponse(true, 'Items retrieved successfully', $items);
     } catch (PDOException $e) {
         sendResponse(false, 'Failed to retrieve items: ' . $e->getMessage());
+    }
+}
+
+function getDeliveryHistory($pdo) {
+    $delivery_id = $_GET['delivery_id'] ?? '';
+    
+    if (!$delivery_id) {
+        sendResponse(false, 'Delivery ID is required');
+    }
+    
+    try {
+        $stmt = $pdo->prepare("
+            SELECT * FROM delivery_history 
+            WHERE delivery_id = ? 
+            ORDER BY delivered_date DESC
+        ");
+        $stmt->execute([$delivery_id]);
+        $history = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        sendResponse(true, 'Delivery history retrieved successfully', $history);
+    } catch (PDOException $e) {
+        sendResponse(false, 'Failed to retrieve delivery history: ' . $e->getMessage());
     }
 }

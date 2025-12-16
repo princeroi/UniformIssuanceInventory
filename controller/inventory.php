@@ -241,7 +241,7 @@ function getItems($pdo) {
             $dailyUsage = $last3MonthsUsage > 0 ? $last3MonthsUsage / $daysIn3Months : 0;
             
             // Define your lead time and safety stock
-            $leadTimeDays = 7;        // Days to receive new stock from supplier
+            $leadTimeDays = 14;        // Days to receive new stock from supplier
             $safetyStockDays = 30;     // Extra buffer days for unexpected demand/delays
             
             // Calculate reorder point
