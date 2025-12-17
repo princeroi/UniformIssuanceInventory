@@ -73,8 +73,22 @@
                            placeholder="Enter employee name" required>
                 </div>
                 
+                <!-- Site Assigned -->
+                <div class="mb-3">
+                    <label class="form-label fw-semibold">Site Assigned</label>
+                    <select class="form-select" id="siteAssigned" required>
+                        <option value="">Select site...</option>
+                        <option value="Head Office">Head Office</option>
+                        <option value="Branch A">Branch A</option>
+                        <option value="Branch B">Branch B</option>
+                        <option value="Warehouse 1">Warehouse 1</option>
+                        <option value="Warehouse 2">Warehouse 2</option>
+                        <option value="Distribution Center">Distribution Center</option>
+                    </select>
+                </div>
+                
                 <!-- Cart Items -->
-                <div class="mb-3" style="max-height: 300px; overflow-y: auto;" id="cartItems">
+                <div class="mb-3" style="max-height: 250px; overflow-y: auto;" id="cartItems">
                     <div class="alert alert-info text-center">
                         <i class="fas fa-shopping-basket fa-2x mb-2"></i>
                         <p class="mb-0">Cart is empty</p>

@@ -1,4 +1,4 @@
-// pos.js - Updated with Confirmation and Receipt Modals
+// pos.js - Updated with Site Assigned functionality
 
 // Initialize when page loads
 window.init_pos = function() {
@@ -383,11 +383,27 @@ function showConfirmationModal() {
     }
     
     const employeeName = document.getElementById('employeeName')?.value.trim();
+    const siteAssignedEl = document.getElementById('siteAssigned');
+    const siteAssigned = siteAssignedEl?.value || '';
     const issuanceType = document.getElementById('issuanceType')?.value;
+    
+    // Debug log
+    console.log('Validation check:', {
+        employeeName: employeeName,
+        siteAssigned: siteAssigned,
+        siteAssignedElement: siteAssignedEl,
+        issuanceType: issuanceType
+    });
     
     if (!employeeName) {
         showToast('Please enter employee name', 'warning');
         document.getElementById('employeeName')?.focus();
+        return;
+    }
+    
+    if (!siteAssigned || siteAssigned === '') {
+        showToast('Please select site assigned', 'warning');
+        if (siteAssignedEl) siteAssignedEl.focus();
         return;
     }
     
@@ -413,6 +429,7 @@ function showConfirmationModal() {
                     <div class="modal-body">
                         <div class="alert alert-info">
                             <strong>Employee:</strong> ${escapeHtml(employeeName)}<br>
+                            <strong>Site Assigned:</strong> ${escapeHtml(siteAssigned)}<br>
                             <strong>Issuance Type:</strong> ${escapeHtml(issuanceType)}<br>
                             <strong>Total Items:</strong> ${totalItems}
                         </div>
@@ -465,18 +482,26 @@ function showConfirmationModal() {
 // Complete transaction
 function completeTransaction() {
     const employeeName = document.getElementById('employeeName')?.value.trim();
+    const siteAssignedEl = document.getElementById('siteAssigned');
+    const siteAssigned = siteAssignedEl?.value || '';
     const issuanceType = document.getElementById('issuanceType')?.value;
     
-    // Close confirmation modal
+    // Validate again before sending
+    if (!siteAssigned || siteAssigned === '') {
+        showToast('Please select site assigned', 'warning');
+        if (siteAssignedEl) siteAssignedEl.focus();
+        return;
+    }
+    
     const confirmModal = bootstrap.Modal.getInstance(document.getElementById('confirmationModal'));
     if (confirmModal) confirmModal.hide();
     
-    // Show loading modal
     showLoadingModal();
     
     const formData = new FormData();
     formData.append('action', 'completeTransaction');
     formData.append('employee_name', employeeName);
+    formData.append('site_assigned', siteAssigned);
     formData.append('issuance_type', issuanceType);
     formData.append('items', JSON.stringify(cart));
     
@@ -486,20 +511,17 @@ function completeTransaction() {
     })
     .then(response => response.json())
     .then(result => {
-        // Hide loading modal
         hideLoadingModal();
         
         if (result.success) {
-            // Show success receipt modal
-            showReceiptModal(result, employeeName, issuanceType);
+            showReceiptModal(result, employeeName, siteAssigned, issuanceType);
             
-            // Clear cart and form
             cart = [];
             updateCartDisplay();
             document.getElementById('employeeName').value = '';
+            document.getElementById('siteAssigned').selectedIndex = 0;
             document.getElementById('issuanceType').selectedIndex = 0;
             
-            // Reload products
             loadProducts();
         } else {
             showToast(result.message || 'Transaction failed', 'danger');
@@ -545,7 +567,7 @@ function hideLoadingModal() {
 }
 
 // Show receipt modal
-function showReceiptModal(result, employeeName, issuanceType) {
+function showReceiptModal(result, employeeName, siteAssigned, issuanceType) {
     const transactionDate = new Date().toLocaleString();
     const itemsHtml = cart.map((item, index) => `
         <tr>
@@ -554,161 +576,206 @@ function showReceiptModal(result, employeeName, issuanceType) {
             <td class="text-center">${item.quantity}</td>
         </tr>
     `).join('');
-    
+
     const modalHtml = `
         <div class="modal fade" id="receiptModal" tabindex="-1">
-            <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
-                <div class="modal-content">
-                    <div class="modal-header bg-success text-white">
-                        <h5 class="modal-title">
-                            <i class="fas fa-check-circle me-2"></i>Transaction Successful
-                        </h5>
+            <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="width:8.3in; max-width:8.3in; height:5.85in; max-height:5.85in;">
+                <div class="modal-content" style="height:100%;">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title"><i class="fas fa-file-alt me-2"></i>STRONGLINK SERVICES</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
-                    <div class="modal-body p-0">
-                        <!-- Receipt Content -->
-                        <div id="receiptPrint" class="receipt-container">
-                            <div class="receipt-header">
-                                <h3 class="mb-1">UNIFORM ISSUANCE RECEIPT</h3>
-                                <p class="text-muted mb-0">Official Copy</p>
+                    <div class="modal-body p-2 d-flex justify-content-center align-items-center" style="height:100%; overflow:auto;">
+                        <div id="receiptPrint" class="receipt-container" style="width:100%; height:100%; padding:0.2in; box-sizing:border-box;">
+
+                            <!-- Logo + Address Centered -->
+                            <div class="text-center mb-3">
+                                <img src="assets/images/SSILOGO.png" alt="Logo" style="max-height:50px; object-fit:contain; display:block; margin:0 auto;">
+                                <div style="margin-top:5px; font-weight:bold;">RL Bldg. Francisco Vilage, Brgy. Pulong Sta. Cruz, Sta. Rosa, Laguna</div>
+                                <div>(049) 543-9544</div>
                             </div>
-                            
-                            <div class="receipt-details">
-                                <div class="row mb-3">
-                                    <div class="col-6">
-                                        <strong>Transaction ID:</strong><br>
-                                        <span class="text-primary">${result.transaction_id}</span>
-                                    </div>
-                                    <div class="col-6 text-end">
-                                        <strong>Date & Time:</strong><br>
-                                        ${transactionDate}
-                                    </div>
-                                </div>
-                                
-                                <div class="row mb-3">
-                                    <div class="col-6">
-                                        <strong>Employee Name:</strong><br>
-                                        ${escapeHtml(employeeName)}
-                                    </div>
-                                    <div class="col-6">
-                                        <strong>Issuance Type:</strong><br>
-                                        ${escapeHtml(issuanceType)}
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <h6 class="mb-2">Items Issued:</h6>
-                            <table class="receipt-table">
+
+                            <!-- Employee Details (no borders) -->
+                            <table class="table table-borderless mb-3" style="width:100%;">
+                                <tr>
+                                    <td><strong>Transaction ID:</strong> ${result.transaction_id}</td>
+                                    <td class="text-end"><strong>Date:</strong> ${transactionDate}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Name:</strong> ${escapeHtml(employeeName)}</td>
+                                    <td class="text-end"><strong>Assigned at:</strong> ${escapeHtml(siteAssigned)}</td>
+                                </tr>
+                                <tr>
+                                    <td colspan="2"><strong>Status:</strong> ${escapeHtml(issuanceType)}</td>
+                                </tr>
+                            </table>
+
+                            <!-- Items Table (with borders) -->
+                            <table class="table table-bordered" style="width:100%; border-collapse:collapse;">
                                 <thead>
                                     <tr>
-                                        <th width="50">#</th>
-                                        <th>Item Description</th>
-                                        <th width="100" class="text-center">Quantity</th>
+                                        <th width="50">NO.</th>
+                                        <th>ITEM DESCRIPTION</th>
+                                        <th width="100" class="text-center">QUANTITY</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     ${itemsHtml}
+                                    ${Array(10 - cart.length).fill('<tr><td>&nbsp;</td><td></td><td></td></tr>').join('')}
                                 </tbody>
-                                <tfoot>
-                                    <tr>
-                                        <td colspan="2" class="text-end"><strong>Total Items:</strong></td>
-                                        <td class="text-center"><strong>${result.data.total_items}</strong></td>
-                                    </tr>
-                                </tfoot>
                             </table>
-                            
-                            <div class="receipt-footer">
-                                <div class="row mb-4">
-                                    <div class="col-6">
-                                        <p class="mb-1"><strong>Issued By:</strong></p>
-                                        <div style="border-top: 1px solid #000; padding-top: 5px; margin-top: 30px;">
-                                            ${escapeHtml(result.data.issued_by)}
+                            <!-- Add space above footer -->
+                            <div style="height:30px;"></div>
+
+                            <!-- Footer -->
+                            <table class="table table-borderless" style="width:100%; margin-top:10px;">
+                                <tr>
+                                    <!-- Signature -->
+                                    <td style="width:50%; vertical-align:bottom;">
+                                        <div style="display:flex; flex-direction:column; align-items:center;">
+                                            <div style="margin-bottom:4px; font-weight:bold;">${escapeHtml(employeeName)}</div>
+                                            <div style="border-top:1px solid #000; width:80%;"></div>
+                                            <div style="margin-top:2px; font-size:11px;">Signature over printed name</div>
                                         </div>
-                                    </div>
-                                    <div class="col-6">
-                                        <p class="mb-1"><strong>Received By:</strong></p>
-                                        <div style="border-top: 1px solid #000; padding-top: 5px; margin-top: 30px;">
-                                            ${escapeHtml(employeeName)}
+                                    </td>
+                                    <!-- Date -->
+                                    <td style="width:50%; vertical-align:bottom;">
+                                        <div style="display:flex; flex-direction:column; align-items:center;">
+                                            <div style="margin-bottom:24px;">&nbsp;</div> <!-- Adjust space to align with signature -->
+                                            <div style="border-top:1px solid #000; width:80%;"></div>
+                                            <div style="margin-top:2px; font-size:11px;">Date Received</div>
                                         </div>
-                                    </div>
-                                </div>
-                                
-                                <p class="text-muted small mb-0">
-                                    This is an official receipt. Please keep for your records.<br>
-                                    For inquiries, please contact the HR Department.
-                                </p>
-                            </div>
+                                    </td>
+                                </tr>
+                            </table>
                         </div>
                     </div>
                     <div class="modal-footer no-print">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                            <i class="fas fa-times me-1"></i>Close
-                        </button>
-                        <button type="button" class="btn btn-primary" onclick="printReceipt()">
-                            <i class="fas fa-print me-1"></i>Print Receipt
-                        </button>
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="button" class="btn btn-info" onclick="previewReceipt()"><i class="fas fa-eye me-1"></i>Preview</button>
+                        <button type="button" class="btn btn-primary" onclick="printReceipt()"><i class="fas fa-print me-1"></i>Print Receipt</button>
                     </div>
                 </div>
             </div>
         </div>
     `;
-    
+
     const existingModal = document.getElementById('receiptModal');
     if (existingModal) existingModal.remove();
-    
+
     document.body.insertAdjacentHTML('beforeend', modalHtml);
     const modal = new bootstrap.Modal(document.getElementById('receiptModal'));
     modal.show();
-    
-    document.getElementById('receiptModal').addEventListener('hidden.bs.modal', function() {
-        // Remove modal HTML
-        this.remove();
 
-        // Remove any remaining backdrop
+    document.getElementById('receiptModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
         const backdrop = document.querySelector('.modal-backdrop');
         if (backdrop) backdrop.remove();
-
-        // Re-enable scrolling (Bootstrap sets body overflow to hidden)
         document.body.classList.remove('modal-open');
     });
-
 }
 
-// Print receipt
+// Preview receipt (same format as modal)
+function previewReceipt() {
+    const receipt = document.getElementById('receiptPrint');
+    if (!receipt) return;
+
+    const previewWindow = window.open('', '_blank', 'width=900,height=1200,scrollbars=yes');
+    previewWindow.document.write(`
+        <html>
+        <head>
+            <title>Receipt Preview</title>
+            <style>
+                body {
+                    width: 210mm; /* A4 width */
+                    min-height: 297mm; /* A4 height */
+                    font-family: Arial, sans-serif;
+                    font-size: 12px;
+                    margin: 0;
+                    padding: 10mm; /* Top padding so receipt is not glued to top */
+                    box-sizing: border-box;
+                }
+                .receipt-container {
+                    width: 100%;
+                    /* keep height auto so it only takes as much as content */
+                }
+                table { width: 100%; border-collapse: collapse; }
+                th, td { padding: 4px; }
+                .table-bordered th, .table-bordered td { border: 1px solid #000; }
+                .table-borderless td, .table-borderless th { border: none; }
+                .text-center { text-align: center; }
+                .text-end { text-align: right; }
+            </style>
+        </head>
+        <body>
+            ${receipt.innerHTML}
+        </body>
+        </html>
+    `);
+    previewWindow.document.close();
+    previewWindow.focus();
+}
+
+// Print receipt on A4 portrait paper
 function printReceipt() {
-    window.print();
+    const receipt = document.getElementById('receiptPrint');
+    if (!receipt) return;
+
+    const printWindow = window.open('', '_blank', 'width=900,height=1200,scrollbars=yes');
+    printWindow.document.write(`
+        <html>
+        <head>
+            <title>Receipt</title>
+            <style>
+                @media print {
+                    body { margin: 0; }
+                    table { width: 100%; border-collapse: collapse; }
+                    th, td { padding: 4px; font-size: 12px; }
+                    .table-bordered th, .table-bordered td { border: 1px solid #000; }
+                    .table-borderless td, .table-borderless th { border: none; }
+                    .text-center { text-align: center; }
+                    .text-end { text-align: right; }
+                    .no-print { display: none; }
+                }
+                @page { size: A4 portrait; margin: 15mm 10mm 10mm 10mm; }
+                body {
+                    width: 210mm;  /* full A4 width */
+                    min-height: 297mm; /* full A4 height */
+                    font-family: Arial, sans-serif;
+                    font-size: 12px;
+                    margin: 0;
+                    padding: 10mm 10mm 0 10mm; /* top padding to start receipt from top */
+                    box-sizing: border-box;
+                }
+                .receipt-container {
+                    width: 100%;
+                    /* height auto so it only takes as much as needed */
+                }
+            </style>
+        </head>
+        <body>
+            ${receipt.innerHTML}
+        </body>
+        </html>
+    `);
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
+    printWindow.close();
 }
+
+
+
+
 
 // Simple toast notification
-function showToast(message, type = 'info') {
-    const colors = {
-        success: '#28a745',
-        warning: '#ffc107',
-        info: '#17a2b8',
-        danger: '#dc3545'
-    };
-    
-    const toast = document.createElement('div');
-    toast.style.cssText = `
-        position: fixed;
-        top: 20px;
-        right: 20px;
-        background: ${colors[type] || colors.info};
-        color: white;
-        padding: 15px 20px;
-        border-radius: 5px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        z-index: 9999;
-        animation: slideIn 0.3s ease;
-    `;
-    toast.textContent = message;
-    
+function showToast(message,type='info'){
+    const colors={success:'#28a745',warning:'#ffc107',info:'#17a2b8',danger:'#dc3545'};
+    const toast=document.createElement('div');
+    toast.style.cssText=`position:fixed;top:20px;right:20px;background:${colors[type]||colors.info};color:white;padding:15px 20px;border-radius:5px;box-shadow:0 4px 6px rgba(0,0,0,0.1);z-index:9999;animation:slideIn 0.3s ease;`;
+    toast.textContent=message;
     document.body.appendChild(toast);
-    
-    setTimeout(() => {
-        toast.style.animation = 'slideOut 0.3s ease';
-        setTimeout(() => toast.remove(), 300);
-    }, 3000);
+    setTimeout(()=>{ toast.style.animation='slideOut 0.3s ease'; setTimeout(()=>toast.remove(),300); },3000);
 }
 
 // Auto-initialize

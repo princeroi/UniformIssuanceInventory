@@ -4,9 +4,17 @@
             <h1 class="page-title">Uniform Issuance</h1>
             <p class="page-subtitle">Manage employee uniform distribution</p>
         </div>
-        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newIssuanceModal">
-            <i class="fas fa-plus"></i> New Issuance
-        </button>
+        <div>
+            <button class="btn btn-success me-2" 
+                    id="bulkPrintBtn" 
+                    onclick="printBulkIssuances()" 
+                    disabled>
+                <i class="fas fa-print"></i> Print Selected
+            </button>
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newIssuanceModal">
+                <i class="fas fa-plus"></i> New Issuance
+            </button>
+        </div>
     </div>
 </div>
 
@@ -62,9 +70,17 @@
             <table class="table table-hover">
                 <thead>
                     <tr>
+                        <th width="50" class="text-center">
+                            <input type="checkbox" 
+                                   class="form-check-input" 
+                                   id="selectAll" 
+                                   onchange="toggleSelectAll()"
+                                   title="Select All">
+                        </th>
                         <th>Transaction ID</th>
                         <th>Date</th>
                         <th>Employee Name</th>
+                        <th>Site Assigned</th>
                         <th>Issuance Type</th>
                         <th>Total Items</th>
                         <th>Issued By</th>
@@ -73,7 +89,7 @@
                 </thead>
                 <tbody id="issuancesTableBody">
                     <tr>
-                        <td colspan="7" class="text-center">
+                        <td colspan="9" class="text-center">
                             <div class="spinner-border spinner-border-sm text-primary" role="status">
                                 <span class="visually-hidden">Loading...</span>
                             </div> Loading issuances...

@@ -81,6 +81,7 @@ window.init_issuance = function() {
     window.currentPage = 1;
     window.itemsPerPage = 10;
     window.totalPages = 1;
+    window.selectedIssuances = new Set();
     loadIssuances();
     setupEventListeners();
 };
@@ -91,11 +92,10 @@ function setupEventListeners() {
     if (searchInput) {
         let searchTimeout;
         searchInput.addEventListener('input', function() {
-            // Debounce search to avoid too many requests
             clearTimeout(searchTimeout);
             searchTimeout = setTimeout(() => {
-                loadIssuances(1); // Reset to page 1 when searching
-            }, 500); // Wait 500ms after user stops typing
+                loadIssuances(1);
+            }, 500);
         });
     }
 
@@ -116,6 +116,49 @@ function setupEventListeners() {
     }
 }
 
+function toggleSelectAll() {
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.issuance-checkbox');
+    
+    checkboxes.forEach(checkbox => {
+        checkbox.checked = selectAllCheckbox.checked;
+        const id = parseInt(checkbox.value);
+        if (selectAllCheckbox.checked) {
+            window.selectedIssuances.add(id);
+        } else {
+            window.selectedIssuances.delete(id);
+        }
+    });
+    
+    updateBulkPrintButton();
+}
+
+function toggleIssuanceSelection(id) {
+    if (window.selectedIssuances.has(id)) {
+        window.selectedIssuances.delete(id);
+    } else {
+        window.selectedIssuances.add(id);
+    }
+    
+    // Update select all checkbox
+    const selectAllCheckbox = document.getElementById('selectAll');
+    const checkboxes = document.querySelectorAll('.issuance-checkbox');
+    const allChecked = Array.from(checkboxes).every(cb => cb.checked);
+    selectAllCheckbox.checked = allChecked;
+    
+    updateBulkPrintButton();
+}
+
+function updateBulkPrintButton() {
+    const bulkPrintBtn = document.getElementById('bulkPrintBtn');
+    const count = window.selectedIssuances.size;
+    
+    if (bulkPrintBtn) {
+        bulkPrintBtn.disabled = count === 0;
+        bulkPrintBtn.innerHTML = `<i class="fas fa-print"></i> Print Selected${count > 0 ? ` (${count})` : ''}`;
+    }
+}
+
 async function loadIssuances(page = 1) {
     window.currentPage = page;
     
@@ -125,7 +168,7 @@ async function loadIssuances(page = 1) {
         return;
     }
 
-    tbody.innerHTML = `<tr><td colspan="7" class="text-center">
+    tbody.innerHTML = `<tr><td colspan="9" class="text-center">
         <div class="spinner-border spinner-border-sm text-primary" role="status">
             <span class="visually-hidden">Loading...</span>
         </div> Loading issuances...
@@ -158,7 +201,7 @@ async function loadIssuances(page = 1) {
             const issuances = allIssuances.slice(startIndex, endIndex);
 
             if (allIssuances.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="7" class="text-center text-muted">
+                tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted">
                     <i class="fas fa-clipboard-list fa-2x mb-2 d-block"></i>
                     No issuances found matching your filters.
                 </td></tr>`;
@@ -167,11 +210,24 @@ async function loadIssuances(page = 1) {
             }
 
             tbody.innerHTML = issuances.map(issuance => {
+                const isChecked = window.selectedIssuances.has(issuance.id);
                 return `
                     <tr>
+                        <td class="text-center">
+                            <input type="checkbox" 
+                                   class="form-check-input issuance-checkbox" 
+                                   value="${issuance.id}"
+                                   ${isChecked ? 'checked' : ''}
+                                   onchange="toggleIssuanceSelection(${issuance.id})">
+                        </td>
                         <td><strong>${escapeHtml(issuance.transaction_id)}</strong></td>
                         <td>${formatDate(issuance.issuance_date)}</td>
                         <td>${escapeHtml(issuance.employee_name)}</td>
+                        <td>
+                            <span class="badge bg-secondary">
+                                ${escapeHtml(issuance.site_assigned || 'N/A')}
+                            </span>
+                        </td>
                         <td>
                             <span class="badge bg-primary">
                                 ${escapeHtml(issuance.issuance_type)}
@@ -195,18 +251,16 @@ async function loadIssuances(page = 1) {
                 `;
             }).join('');
 
-            // Show results count
             showResultsCount(allIssuances.length, startIndex + 1, Math.min(endIndex, allIssuances.length));
-            
-            // Update pagination controls
             updatePagination();
+            updateBulkPrintButton();
         } else {
-            tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">${result.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">${result.message}</td></tr>`;
             updatePagination();
         }
     } catch (error) {
         console.error('Error fetching issuances:', error);
-        tbody.innerHTML = `<tr><td colspan="7" class="text-center text-danger">
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-danger">
             <i class="fas fa-exclamation-triangle me-2"></i>
             Error loading issuances. Please try again.
         </td></tr>`;
@@ -242,7 +296,6 @@ function updatePagination() {
     
     let paginationHTML = '';
     
-    // Previous button
     paginationHTML += `
         <li class="page-item ${window.currentPage === 1 ? 'disabled' : ''}">
             <a class="page-link" href="#" onclick="changePage(${window.currentPage - 1}); return false;">
@@ -251,17 +304,14 @@ function updatePagination() {
         </li>
     `;
     
-    // Page numbers
     const maxVisiblePages = 5;
     let startPage = Math.max(1, window.currentPage - Math.floor(maxVisiblePages / 2));
     let endPage = Math.min(window.totalPages, startPage + maxVisiblePages - 1);
     
-    // Adjust start if we're near the end
     if (endPage - startPage < maxVisiblePages - 1) {
         startPage = Math.max(1, endPage - maxVisiblePages + 1);
     }
     
-    // First page
     if (startPage > 1) {
         paginationHTML += `
             <li class="page-item">
@@ -273,7 +323,6 @@ function updatePagination() {
         }
     }
     
-    // Page numbers
     for (let i = startPage; i <= endPage; i++) {
         paginationHTML += `
             <li class="page-item ${i === window.currentPage ? 'active' : ''}">
@@ -282,7 +331,6 @@ function updatePagination() {
         `;
     }
     
-    // Last page
     if (endPage < window.totalPages) {
         if (endPage < window.totalPages - 1) {
             paginationHTML += `<li class="page-item disabled"><span class="page-link">...</span></li>`;
@@ -294,7 +342,6 @@ function updatePagination() {
         `;
     }
     
-    // Next button
     paginationHTML += `
         <li class="page-item ${window.currentPage === window.totalPages ? 'disabled' : ''}">
             <a class="page-link" href="#" onclick="changePage(${window.currentPage + 1}); return false;">
@@ -310,120 +357,381 @@ function changePage(page) {
     if (page < 1 || page > window.totalPages) return;
     loadIssuances(page);
     
-    // Scroll to top of table
     const tableCard = document.querySelector('.card .card-body');
     if (tableCard) {
         tableCard.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
 }
 
+async function printBulkIssuances() {
+    if (window.selectedIssuances.size === 0) {
+        NotificationUI.showToast('Please select at least one issuance to print', 'warning');
+        return;
+    }
+
+    try {
+        NotificationUI.showToast('Loading issuances for printing...', 'info');
+        
+        const issuanceIds = Array.from(window.selectedIssuances);
+        const issuancePromises = issuanceIds.map(id => 
+            fetch(`controller/issuance.php?action=getIssuanceById&id=${id}`).then(r => r.json())
+        );
+        
+        const results = await Promise.all(issuancePromises);
+        const validIssuances = results
+            .filter(r => r.success)
+            .map(r => r.data);
+
+        if (validIssuances.length === 0) {
+            NotificationUI.showError('Failed to load any issuances');
+            return;
+        }
+
+        printMultipleReceipts(validIssuances);
+        
+    } catch (err) {
+        console.error(err);
+        NotificationUI.showError('Error loading issuances', err.message);
+    }
+}
+
+function printMultipleReceipts(issuances) {
+    const printWindow = window.open('', '_blank', 'width=900,height=1200,scrollbars=yes');
+    
+    let receiptsHTML = '';
+    
+    // Process issuances in pairs (2 per page)
+    for (let i = 0; i < issuances.length; i += 2) {
+        const issuance1 = issuances[i];
+        const issuance2 = issuances[i + 1];
+        
+        receiptsHTML += `
+            <div class="print-page">
+                ${buildSingleReceipt(issuance1)}
+                ${issuance2 ? buildSingleReceipt(issuance2) : ''}
+            </div>
+        `;
+    }
+    
+    printWindow.document.write(`
+        <html>
+        <head>
+            <style>
+                @page { margin: 0; size: A4 portrait; }
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                body { font-family: Arial, sans-serif; font-size: 12px; margin: 0; }
+                
+                .print-page {
+                    width: 210mm;
+                    height: 297mm;
+                    page-break-after: always;
+                    padding: 5mm;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 5mm;
+                }
+                
+                .receipt {
+                    width: 100%;
+                    height: calc(50% - 2.5mm);
+                    border: 1px solid #333;
+                    padding: 5mm;
+                    background: white;
+                    display: flex;
+                    flex-direction: column;
+                }
+                
+                .header-section {
+                    text-align: center;
+                    margin-bottom: 4px;
+                    border-bottom: 1px solid #000;
+                    padding-bottom: 4px;
+                }
+                
+                .header-section img {
+                    max-height: 30px;
+                    display: block;
+                    margin: 0 auto 2px;
+                }
+                
+                .company-name {
+                    font-weight: bold;
+                    font-size: 12px;
+                    margin-bottom: 1px;
+                }
+                
+                .company-address {
+                    font-size: 10px;
+                    color: #333;
+                    line-height: 1.2;
+                }
+                
+                .details-table {
+                    width: 100%;
+                    margin-bottom: 4px;
+                    font-size: 14px;
+                }
+                
+                .details-table td {
+                    padding: 1px 0;
+                }
+                
+                .items-table {
+                    width: 100%;
+                    border-collapse: collapse;
+                    margin-bottom: 4px;
+                    font-size: 12px;
+                    flex-grow: 1;
+                }
+                
+                .items-table th,
+                .items-table td {
+                    border: 1px solid #000;
+                    padding: 2px;
+                }
+                
+                .items-table th {
+                    background: #f0f0f0;
+                    font-weight: bold;
+                    text-align: center;
+                }
+                
+                .text-center { text-align: center; }
+                .text-right { text-align: right; }
+                
+                .signature-section {
+                    display: flex;
+                    justify-content: space-between;
+                    margin-top: 8px;
+                }
+                
+                .signature-box {
+                    width: 45%;
+                    text-align: center;
+                }
+                
+                .signature-line {
+                    border-top: 1px solid #000;
+                    margin-top: 0;
+                    padding-top: 1px;   
+                }
+                
+                @media print {
+                    .print-page {
+                        page-break-after: always;
+                    }
+                    body { margin: 0; }
+                    @page { margin: 0; }
+                }
+            </style>
+        </head>
+        <body>
+            ${receiptsHTML}
+        </body>
+        </html>
+    `);
+    
+    printWindow.document.close();
+    printWindow.focus();
+    
+    setTimeout(() => {
+        printWindow.print();
+        printWindow.close();
+    }, 250);
+}
+
+function buildSingleReceipt(issuance) {
+    const items = issuance.items || [];
+    
+    const itemsHtml = items.map((item, index) => `
+        <tr>
+            <td class="text-center">${index + 1}</td>
+            <td>${escapeHtml(item.item_name)}</td>
+            <td class="text-center">${item.quantity}</td>
+        </tr>
+    `).join('') + Array(Math.max(0, 6 - items.length))
+        .fill('<tr><td>&nbsp;</td><td></td><td></td></tr>')
+        .join('');
+    
+    return `
+        <div class="receipt">
+            <div class="header-section">
+                <img src="assets/images/SSILOGO.png" alt="Logo">
+                <div class="company-name">STRONGLINK SERVICES</div>
+                <div class="company-address">
+                    RL Bldg. Francisco Village, Brgy. Pulong Sta. Cruz, Sta. Rosa, Laguna | (049) 543-9544
+                </div>
+            </div>
+            
+            <table class="details-table">
+                <tr>
+                    <td width="50%"><strong>Trans ID:</strong> ${escapeHtml(issuance.transaction_id)}</td>
+                    <td width="50%" class="text-right"><strong>Date:</strong> ${formatDate(issuance.transaction_date)}</td>
+                </tr>
+                <tr>
+                    <td><strong>Name:</strong> ${escapeHtml(issuance.employee_name)}</td>
+                    <td class="text-right"><strong>Site:</strong> ${escapeHtml(issuance.site_assigned || 'N/A')}</td>
+                </tr>
+                <tr>
+                    <td colspan="2"><strong>Type:</strong> ${escapeHtml(issuance.issuance_type)}</td>
+                </tr>
+            </table>
+            
+            <table class="items-table">
+                <thead>
+                    <tr>
+                        <th width="30">NO.</th>
+                        <th>ITEM DESCRIPTION</th>
+                        <th width="50">QTY</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${itemsHtml}
+                </tbody>
+            </table>
+            
+            <div class="signature-section">
+                <div class="signature-box">
+                    <div style="font-weight: bold; margin-bottom: 20px; font-size: 12px; min-height: 20px;">
+                        ${escapeHtml(issuance.employee_name)}
+                    </div>
+                    <div class="signature-line"></div>
+                    <div style="font-size: 10px; margin-top: 2px;">Signature over printed name</div>
+                </div>
+                <div class="signature-box">
+                    <div style="font-weight: bold; margin-bottom: 20px; font-size: 12px; min-height: 20px;">
+                        &nbsp;
+                    </div>
+                    <div class="signature-line"></div>
+                    <div style="font-size: 10px; margin-top: 2px;">Date Received</div>
+                </div>
+            </div>
+        </div>
+    `;
+}
+
 async function viewIssuanceDetails(id) {
     try {
         const response = await fetch(`controller/issuance.php?action=getIssuanceById&id=${id}`);
         const result = await response.json();
-        
-        if (result.success) {
-            const issuance = result.data;
-            const items = issuance.items || [];
-            
-            // Build items table HTML
-            const itemsTableHTML = items.length > 0 ? `
-                <div class="col-12 mt-3">
-                    <h6 class="border-bottom pb-2 mb-3">
-                        <i class="fas fa-box me-2"></i>Issued Items
-                    </h6>
-                    <div class="table-responsive">
-                        <table class="table table-sm table-bordered">
-                            <thead class="table-light">
-                                <tr>
-                                    <th>Item Code</th>
-                                    <th>Item Name</th>
-                                    <th>Category</th>
-                                    <th>Size</th>
-                                    <th>Quantity</th>
-                                    <th>Issued Date</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                ${items.map(item => `
-                                    <tr>
-                                        <td><code>${escapeHtml(item.item_code)}</code></td>
-                                        <td>${escapeHtml(item.item_name)}</td>
-                                        <td><span class="badge bg-secondary">${escapeHtml(item.category)}</span></td>
-                                        <td><strong>${escapeHtml(item.size)}</strong></td>
-                                        <td><strong>${item.quantity}</strong></td>
-                                        <td>${formatDateTime(item.issued_date)}</td>
-                                    </tr>
-                                `).join('')}
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            ` : '<div class="col-12 mt-3"><p class="text-muted">No items recorded for this issuance.</p></div>';
-            
-            const modal = document.createElement('div');
-            modal.className = 'modal fade';
-            modal.innerHTML = `
-                <div class="modal-dialog modal-xl">
-                    <div class="modal-content">
+
+        if (!result.success) {
+            return NotificationUI.showError('Failed to load issuance details', result.message);
+        }
+
+        const issuance = result.data;
+        const items = issuance.items || [];
+        const transactionDate = formatDateTime(issuance.transaction_date);
+
+        const itemsHtml = items.map((item, index) => `
+            <tr>
+                <td class="text-center">${index + 1}</td>
+                <td>${escapeHtml(item.item_name)}</td>
+                <td class="text-center">${item.quantity}</td>
+            </tr>
+        `).join('') + Array(Math.max(0, 10 - items.length))
+            .fill('<tr><td>&nbsp;</td><td></td><td></td></tr>')
+            .join('');
+
+        const modalHtml = `
+            <div class="modal fade" id="receiptModal" tabindex="-1">
+                <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable"
+                     style="width:8.3in; max-width:8.3in; height:5.85in; max-height:5.85in;">
+                    <div class="modal-content" style="height:100%;">
+                        
                         <div class="modal-header bg-primary text-white">
                             <h5 class="modal-title">
-                                <i class="fas fa-clipboard-list me-2"></i>
-                                Issuance Details
+                                <i class="fas fa-file-invoice me-2"></i>STRONGLINK SERVICES
                             </h5>
                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                         </div>
-                        <div class="modal-body">
-                            <div class="row g-3">
-                                <div class="col-md-6">
-                                    <label class="text-muted small">Transaction ID</label>
-                                    <p class="fw-bold">${escapeHtml(issuance.transaction_id)}</p>
+
+                        <div class="modal-body p-2 d-flex justify-content-center align-items-center">
+                            <div id="receiptPrint" style="width:100%; height:100%; padding:0.2in;">
+
+                                <div class="text-center mb-3">
+                                    <img src="assets/images/SSILOGO.png"
+                                         style="max-height:50px; display:block; margin:0 auto;">
+                                    <div style="font-weight:bold; margin-top:5px;">
+                                        RL Bldg. Francisco Village, Brgy. Pulong Sta. Cruz, Sta. Rosa, Laguna
+                                    </div>
+                                    <div>(049) 543-9544</div>
                                 </div>
-                                <div class="col-md-6">
-                                    <label class="text-muted small">Employee Name</label>
-                                    <p class="fw-bold">${escapeHtml(issuance.employee_name)}</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="text-muted small">Issuance Type</label>
-                                    <p><span class="badge bg-primary">${escapeHtml(issuance.issuance_type)}</span></p>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="text-muted small">Total Items</label>
-                                    <p class="fw-bold">${issuance.total_items} items</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="text-muted small">Issued By</label>
-                                    <p class="fw-bold">${escapeHtml(issuance.issued_by)}</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="text-muted small">Issuance Date</label>
-                                    <p>${formatDateTime(issuance.issuance_date)}</p>
-                                </div>
-                                <div class="col-md-6">
-                                    <label class="text-muted small">Transaction Date</label>
-                                    <p>${formatDateTime(issuance.transaction_date)}</p>
-                                </div>
-                                ${itemsTableHTML}
+
+                                <table class="table table-borderless mb-3">
+                                    <tr>
+                                        <td><strong>Transaction ID:</strong> ${escapeHtml(issuance.transaction_id)}</td>
+                                        <td class="text-end"><strong>Date:</strong> ${transactionDate}</td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Name:</strong> ${escapeHtml(issuance.employee_name)}</td>
+                                        <td class="text-end">
+                                            <strong>Assigned at:</strong> ${escapeHtml(issuance.site_assigned || 'N/A')}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td colspan="2">
+                                            <strong>Status:</strong> ${escapeHtml(issuance.issuance_type)}
+                                        </td>
+                                    </tr>
+                                </table>
+
+                                <table class="table table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th width="50">NO.</th>
+                                            <th>ITEM DESCRIPTION</th>
+                                            <th width="100" class="text-center">QTY</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        ${itemsHtml}
+                                    </tbody>
+                                </table>
+
+                                <div style="height:30px;"></div>
+
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <td width="50%" class="text-center">
+                                            <div style="font-weight:bold;">
+                                                ${escapeHtml(issuance.employee_name)}
+                                            </div>
+                                            <div style="border-top:1px solid #000; width:80%; margin:0 auto;"></div>
+                                            <small>Signature over printed name</small>
+                                        </td>
+                                        <td width="50%" class="text-center">
+                                            <div style="height:24px;"></div>
+                                            <div style="border-top:1px solid #000; width:80%; margin:0 auto;"></div>
+                                            <small>Date Received</small>
+                                        </td>
+                                    </tr>
+                                </table>
+
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-primary" onclick="printIssuance(${issuance.id})">
-                                <i class="fas fa-print me-1"></i> Print
-                            </button>
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+
+                        <div class="modal-footer no-print">
+                            <button class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
                         </div>
+
                     </div>
                 </div>
-            `;
-            
-            document.body.appendChild(modal);
-            const bsModal = new bootstrap.Modal(modal);
-            bsModal.show();
-            
-            modal.addEventListener('hidden.bs.modal', () => modal.remove());
-        } else {
-            NotificationUI.showError('Failed to load issuance details', result.message);
-        }
+            </div>
+        `;
+
+        document.getElementById('receiptModal')?.remove();
+
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        const modal = new bootstrap.Modal(document.getElementById('receiptModal'));
+        modal.show();
+
+        document.getElementById('receiptModal').addEventListener('hidden.bs.modal', function () {
+            this.remove();
+            document.querySelector('.modal-backdrop')?.remove();
+            document.body.classList.remove('modal-open');
+        });
+
     } catch (err) {
         console.error(err);
         NotificationUI.showError('Failed to load issuance details', err.message);
@@ -434,159 +742,13 @@ async function printIssuance(id) {
     try {
         const response = await fetch(`controller/issuance.php?action=getIssuanceById&id=${id}`);
         const result = await response.json();
-        
-        if (result.success) {
-            const issuance = result.data;
-            const items = issuance.items || [];
-            
-            // Build items table for print
-            const itemsTableHTML = items.length > 0 ? `
-                <div class="items-section">
-                    <h3 style="margin-top: 40px; margin-bottom: 20px; color: #333; border-bottom: 2px solid #007bff; padding-bottom: 10px;">
-                        <i class="fas fa-box"></i> Issued Items
-                    </h3>
-                    <table style="width: 100%; border-collapse: collapse; margin-bottom: 30px;">
-                        <thead>
-                            <tr style="background-color: #f8f9fa;">
-                                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">Item Code</th>
-                                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">Item Name</th>
-                                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: left;">Category</th>
-                                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: center;">Size</th>
-                                <th style="border: 1px solid #dee2e6; padding: 12px; text-align: center;">Quantity</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${items.map(item => `
-                                <tr>
-                                    <td style="border: 1px solid #dee2e6; padding: 10px;">
-                                        <code style="background: #f8f9fa; padding: 4px 8px; border-radius: 4px; font-family: monospace;">
-                                            ${escapeHtml(item.item_code)}
-                                        </code>
-                                    </td>
-                                    <td style="border: 1px solid #dee2e6; padding: 10px; font-weight: 500;">
-                                        ${escapeHtml(item.item_name)}
-                                    </td>
-                                    <td style="border: 1px solid #dee2e6; padding: 10px;">
-                                        ${escapeHtml(item.category)}
-                                    </td>
-                                    <td style="border: 1px solid #dee2e6; padding: 10px; text-align: center; font-weight: bold;">
-                                        ${escapeHtml(item.size)}
-                                    </td>
-                                    <td style="border: 1px solid #dee2e6; padding: 10px; text-align: center; font-weight: bold; font-size: 18px;">
-                                        ${item.quantity}
-                                    </td>
-                                </tr>
-                            `).join('')}
-                            <tr style="background-color: #f8f9fa; font-weight: bold;">
-                                <td colspan="4" style="border: 1px solid #dee2e6; padding: 12px; text-align: right;">
-                                    TOTAL ITEMS:
-                                </td>
-                                <td style="border: 1px solid #dee2e6; padding: 12px; text-align: center; font-size: 20px; color: #007bff;">
-                                    ${items.reduce((sum, item) => sum + parseInt(item.quantity), 0)}
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            ` : '';
-            
-            const printWindow = window.open('', '_blank', 'width=900,height=700');
-            
-            const printContent = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>Issuance Receipt - ${issuance.transaction_id}</title>
-                    <style>
-                        body { font-family: Arial, sans-serif; padding: 40px; line-height: 1.6; }
-                        .header { text-align: center; margin-bottom: 30px; border-bottom: 3px solid #333; padding-bottom: 20px; }
-                        .header h1 { margin: 0; font-size: 32px; color: #333; }
-                        .header p { margin: 5px 0; color: #666; }
-                        .info-section { margin: 30px 0; }
-                        .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-                        .info-item { padding: 15px; background: #f8f9fa; border-left: 4px solid #007bff; }
-                        .info-label { font-size: 12px; color: #666; text-transform: uppercase; margin-bottom: 5px; }
-                        .info-value { font-size: 16px; font-weight: bold; color: #333; }
-                        .badge { display: inline-block; padding: 8px 16px; border-radius: 20px; 
-                                background-color: #007bff; color: white; font-weight: bold; }
-                        .signature-section { margin-top: 80px; display: flex; justify-content: space-between; }
-                        .signature-box { width: 45%; text-align: center; }
-                        .signature-line { border-top: 2px solid #333; margin-top: 60px; padding-top: 10px; }
-                        .footer { margin-top: 40px; text-align: center; font-size: 12px; color: #666; 
-                                 border-top: 1px solid #ddd; padding-top: 20px; }
-                        @media print { body { padding: 20px; } .no-print { display: none; } }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <h1>UNIFORM ISSUANCE RECEIPT</h1>
-                        <p style="font-size: 18px; margin-top: 10px;">Transaction ID: <strong>${escapeHtml(issuance.transaction_id)}</strong></p>
-                    </div>
-                    
-                    <div class="info-section">
-                        <div class="info-grid">
-                            <div class="info-item">
-                                <div class="info-label">Employee Name</div>
-                                <div class="info-value">${escapeHtml(issuance.employee_name)}</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">Issuance Type</div>
-                                <div class="info-value">
-                                    <span class="badge">${escapeHtml(issuance.issuance_type)}</span>
-                                </div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">Total Items Issued</div>
-                                <div class="info-value">${issuance.total_items} items</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">Issued By</div>
-                                <div class="info-value">${escapeHtml(issuance.issued_by)}</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">Issuance Date</div>
-                                <div class="info-value">${formatDateTime(issuance.issuance_date)}</div>
-                            </div>
-                            <div class="info-item">
-                                <div class="info-label">Transaction Date</div>
-                                <div class="info-value">${formatDateTime(issuance.transaction_date)}</div>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    ${itemsTableHTML}
-                    
-                    <div class="signature-section">
-                        <div class="signature-box">
-                            <div class="signature-line">
-                                ${escapeHtml(issuance.employee_name)}<br>
-                                <small style="color: #666;">Employee Signature</small>
-                            </div>
-                        </div>
-                        <div class="signature-box">
-                            <div class="signature-line">
-                                ${escapeHtml(issuance.issued_by)}<br>
-                                <small style="color: #666;">Issued By</small>
-                            </div>
-                        </div>
-                    </div>
-                    
-                    <div class="footer">
-                        <p>This is an official uniform issuance receipt.</p>
-                        <p>Generated on ${formatDateTime(new Date().toISOString())}</p>
-                    </div>
-                </body>
-                </html>
-            `;
-            
-            printWindow.document.write(printContent);
-            printWindow.document.close();
-            printWindow.onload = function() {
-                printWindow.print();
-            };
-        } else {
-            NotificationUI.showError('Failed to load issuance details', result.message);
+
+        if (!result.success) {
+            return NotificationUI.showError('Failed to load issuance details', result.message);
         }
+
+        printMultipleReceipts([result.data]);
+
     } catch (err) {
         console.error(err);
         NotificationUI.showError('Error loading issuance details', 'Please check your connection and try again.');
@@ -604,7 +766,7 @@ function resetFilters() {
     if (dateFromFilter) dateFromFilter.value = '';
     if (dateToFilter) dateToFilter.value = '';
     
-    loadIssuances(1); // Reset to page 1
+    loadIssuances(1);
 }
 
 function formatDate(dateString) {

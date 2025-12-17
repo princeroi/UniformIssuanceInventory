@@ -16,7 +16,7 @@ document.addEventListener("DOMContentLoaded", function() {
         'reports': 'assets/js/reports.js',
         'history': 'assets/js/history.js',
         'settings': 'assets/js/settings.js',
-        'receiving-copy': 'assets/js/receiving-copy.js'
+        'layout': 'assets/js/layout.js'
     };
 
     // Track loaded scripts to avoid duplicates

@@ -1,4 +1,3 @@
-
 <?php
 // pos.php - Place this in controller/pos.php
 require_once 'config.php';
@@ -6,17 +5,15 @@ header('Content-Type: application/json');
 
 try {
     // Create PDO connection using variables from config.php
-    // config.php provides: $host, $db, $user, $pass, $dsn, $options
     $pdo = new PDO($dsn, $user, $pass, $options);
     
     $action = $_GET['action'] ?? $_POST['action'] ?? '';
     
     if ($action === 'getItems') {
-        // First, check if items table exists and has data
+        // Get all items
         $checkStmt = $pdo->query("SELECT COUNT(*) as total FROM items");
         $totalCount = $checkStmt->fetch(PDO::FETCH_ASSOC);
         
-        // Get all items
         $stmt = $pdo->query("
             SELECT 
                 item_code,
@@ -32,7 +29,6 @@ try {
         
         $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        // Add image URLs
         foreach ($items as &$item) {
             if ($item['image_path']) {
                 $item['image_url'] = 'uploads/items/' . $item['image_path'];
@@ -55,7 +51,6 @@ try {
         $search = $_GET['search'] ?? '';
         
         if (empty($search)) {
-            // Return all items if search is empty
             $stmt = $pdo->query("
                 SELECT 
                     item_code,
@@ -69,7 +64,6 @@ try {
                 ORDER BY item_name
             ");
         } else {
-            // Search by name or code
             $stmt = $pdo->prepare("
                 SELECT 
                     item_code,
@@ -107,7 +101,6 @@ try {
         $category = $_GET['category'] ?? '';
         
         if (empty($category) || $category === 'All Categories') {
-            // Return all items
             $stmt = $pdo->query("
                 SELECT 
                     item_code,
@@ -121,7 +114,6 @@ try {
                 ORDER BY item_name
             ");
         } else {
-            // Filter by specific category
             $stmt = $pdo->prepare("
                 SELECT 
                     item_code,
@@ -140,7 +132,6 @@ try {
         
         $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        // Add image URLs
         foreach ($items as &$item) {
             if ($item['image_path']) {
                 $item['image_url'] = 'uploads/items/' . $item['image_path'];
@@ -160,15 +151,24 @@ try {
     } elseif ($action === 'completeTransaction') {
         // Get POST data
         $employeeName = $_POST['employee_name'] ?? '';
+        $siteAssigned = $_POST['site_assigned'] ?? '';
         $issuanceType = $_POST['issuance_type'] ?? '';
         $itemsJson = $_POST['items'] ?? '';
-        $issuedBy = $_POST['issued_by'] ?? 'System'; // Get from session if available
+        $issuedBy = $_POST['issued_by'] ?? 'System';
         
         // Validate input
         if (empty($employeeName)) {
             echo json_encode([
                 'success' => false,
                 'message' => 'Employee name is required'
+            ]);
+            exit;
+        }
+        
+        if (empty($siteAssigned)) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Site assigned is required'
             ]);
             exit;
         }
@@ -201,30 +201,29 @@ try {
                 $totalItems += $item['quantity'];
             }
             
-            // Generate unique transaction ID (format: TXN-YYYYMMDD-XXXXXX)
+            // Generate unique transaction ID
             $transactionId = 'TXN-' . date('Ymd') . '-' . str_pad(rand(1, 999999), 6, '0', STR_PAD_LEFT);
             
-            // Check if transaction_id already exists (rare but possible)
             $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM issuance_transactions WHERE transaction_id = ?");
             $checkStmt->execute([$transactionId]);
             
-            // If exists, regenerate
             while ($checkStmt->fetchColumn() > 0) {
                 $transactionId = 'TXN-' . date('Ymd') . '-' . str_pad(rand(1, 999999), 6, '0', STR_PAD_LEFT);
                 $checkStmt->execute([$transactionId]);
             }
             
-            // Insert into issuance_transactions table
+            // Insert into issuance_transactions table (with site_assigned)
             $stmt = $pdo->prepare("
                 INSERT INTO issuance_transactions 
-                (transaction_id, employee_name, issuance_type, total_items, issued_by, issuance_date) 
-                VALUES (?, ?, ?, ?, ?, NOW())
+                (transaction_id, employee_name, issuance_type, site_assigned, total_items, issued_by, issuance_date) 
+                VALUES (?, ?, ?, ?, ?, ?, NOW())
             ");
             
             $stmt->execute([
                 $transactionId,
                 $employeeName,
                 $issuanceType,
+                $siteAssigned,
                 $totalItems,
                 $issuedBy
             ]);
@@ -232,8 +231,8 @@ try {
             // Insert issuance items and deduct quantities
             $stmtDetail = $pdo->prepare("
                 INSERT INTO issuance_items 
-                (transaction_id, item_code, item_name, category, size, quantity) 
-                VALUES (?, ?, ?, ?, ?, ?)
+                (transaction_id, item_code, item_name, category, size, site_assigned, quantity) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
             ");
             
             $stmtUpdate = $pdo->prepare("
@@ -251,7 +250,7 @@ try {
                 $itemName = $item['item_name'];
                 $quantity = $item['quantity'];
                 
-                // Check current stock and get additional info
+                // Check current stock
                 $stmtCheck->execute([$itemCode]);
                 $currentItem = $stmtCheck->fetch(PDO::FETCH_ASSOC);
                 
@@ -263,13 +262,14 @@ try {
                     throw new Exception("Insufficient stock for {$itemName}. Available: {$currentItem['quantity']}, Requested: {$quantity}");
                 }
                 
-                // Insert detail record with category and size
+                // Insert detail record with site_assigned
                 $stmtDetail->execute([
                     $transactionId,
                     $itemCode,
                     $itemName,
                     $currentItem['category'],
                     $currentItem['size'],
+                    $siteAssigned,
                     $quantity
                 ]);
                 
@@ -289,6 +289,7 @@ try {
                 'transaction_id' => $transactionId,
                 'data' => [
                     'employee_name' => $employeeName,
+                    'site_assigned' => $siteAssigned,
                     'issuance_type' => $issuanceType,
                     'total_items' => $totalItems,
                     'issued_by' => $issuedBy,
@@ -297,7 +298,6 @@ try {
             ]);
             
         } catch (Exception $e) {
-            // Rollback on error
             $pdo->rollBack();
             
             echo json_encode([
