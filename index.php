@@ -1,9 +1,33 @@
+<?php
+session_start();
+
+// Check if user is logged in
+if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
+    header('Location: pages/login.html');
+    exit;
+}
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Uniform Issuance Inventory System</title>
+
+    <script>
+    // CRITICAL: Immediate redirect if not logged in
+    (function() {
+        const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+        
+        if (!isLoggedIn || isLoggedIn !== 'true') {
+            console.log('Access denied - not logged in');
+            window.location.href = 'pages/login.html';
+            // Stop further script execution
+            throw new Error('Not authenticated');
+        }
+    })();
+    </script>
     
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -148,6 +172,7 @@
     </style>
 </head>
 <body>
+   
     <div class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <a href="#" class="sidebar-brand">
@@ -181,7 +206,7 @@
                 <i class="fas fa-users"></i>
                 <span>Users</span>
             </a>
-            <a href="pages/reports.html" class="menu-item" data-page="reports">
+            <!-- <a href="pages/reports.html" class="menu-item" data-page="reports">
                 <i class="fas fa-chart-line"></i>
                 <span>Reports</span>
             </a>
@@ -192,7 +217,7 @@
             <a href="pages/settings.html" class="menu-item" data-page="settings">
                 <i class="fas fa-cog"></i>
                 <span>Settings</span>
-            </a>
+            </a> -->
         </nav>
     </div>
 
@@ -226,7 +251,7 @@
                             <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <a class="dropdown-item" href="#" id="logoutBtn">
+                                <a class="dropdown-item" href="controller/logout.php">
                                     <i class="fas fa-sign-out-alt me-2"></i>Logout
                                 </a>
                             </li>
@@ -242,7 +267,11 @@
         </div>
     </div>
 
+
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="assets/js/notification-ui.js"></script>
     <script src="assets/js/main.js"></script>
+
+
 </body>
 </html>

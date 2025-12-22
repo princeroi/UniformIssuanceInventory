@@ -1,3 +1,105 @@
+// Add this at the VERY TOP of assets/js/main.js
+// This protects ALL pages including index.html, dashboard, and all other pages
+
+// ============================================
+// AUTHENTICATION GUARD - MUST BE AT THE TOP
+// ============================================
+
+(function() {
+    const currentPage = window.location.pathname;
+    const isLoginPage = currentPage.includes('login.html');
+    const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+    
+    console.log('Auth Guard Check:', {
+        currentPage: currentPage,
+        isLoginPage: isLoginPage,
+        isLoggedIn: isLoggedIn
+    });
+    
+    // If not on login page and not logged in, redirect to login
+    if (!isLoginPage && (!isLoggedIn || isLoggedIn !== 'true')) {
+        console.log('Not logged in - redirecting to login');
+        window.location.href = 'pages/login.html';
+        return;
+    }
+    
+    // If on login page and already logged in, redirect to main page
+    if (isLoginPage && isLoggedIn === 'true') {
+        console.log('Already logged in - redirecting to index');
+        window.location.href = '../index.html';
+        return;
+    }
+})();
+
+// ============================================
+// LOGOUT FUNCTION
+// ============================================
+
+function logout() {
+    console.log('Logging out...');
+    
+    // Clear client-side session
+    sessionStorage.clear();
+    localStorage.clear();
+    
+    // Call server-side logout
+    fetch('controller/logout.php')
+        .then(() => {
+            window.location.href = 'pages/login.html';
+        })
+        .catch(() => {
+            // Force redirect even if request fails
+            window.location.href = 'pages/login.html';
+        });
+}
+
+// ============================================
+// SESSION VERIFICATION ON PAGE LOAD
+// ============================================
+
+document.addEventListener('DOMContentLoaded', function() {
+    const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+    
+    if (isLoggedIn === 'true') {
+        // Verify with server that session is still valid
+        fetch('controller/verify-session.php')
+            .then(response => response.json())
+            .then(data => {
+                if (!data.valid) {
+                    console.log('Session expired on server');
+                    sessionStorage.clear();
+                    window.location.href = 'pages/login.html';
+                } else {
+                    console.log('Session valid:', data.user);
+                    
+                    // Update UI with user info if elements exist
+                    const userNameElement = document.querySelector('.user-name');
+                    if (userNameElement && data.user.name) {
+                        userNameElement.textContent = data.user.name;
+                    }
+                }
+            })
+            .catch(err => {
+                console.error('Session verification failed:', err);
+            });
+    }
+    
+    // Attach logout to all logout links
+    const logoutLinks = document.querySelectorAll('a[href*="logout"]');
+    logoutLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            logout();
+        });
+    });
+});
+
+// ============================================
+// YOUR EXISTING MAIN.JS CODE CONTINUES BELOW
+// ============================================
+
+// Rest of your existing main.js code...
+
 // Main.js - Handles page routing and initialization
 document.addEventListener("DOMContentLoaded", function() {
     const menuItems = document.querySelectorAll('.menu-item');
@@ -16,7 +118,6 @@ document.addEventListener("DOMContentLoaded", function() {
         'reports': 'assets/js/reports.js',
         'history': 'assets/js/history.js',
         'settings': 'assets/js/settings.js',
-        'layout': 'assets/js/layout.js'
     };
 
     // Track loaded scripts to avoid duplicates
@@ -79,9 +180,11 @@ document.addEventListener("DOMContentLoaded", function() {
                 }
             })
             .then(() => {
-                // Call the page init function if it exists
-                if (pageName && window[`init_${pageName}`]) {
-                    window[`init_${pageName}`]();
+                if (pageName && typeof window[`init_${pageName}`] === 'function') {
+                    // Ensure DOM is fully painted
+                    requestAnimationFrame(() => {
+                        window[`init_${pageName}`]();
+                    });
                 }
             })
             .catch(err => {
@@ -132,3 +235,13 @@ document.addEventListener("DOMContentLoaded", function() {
         loadPage('pages/dashboard.html', 'dashboard');
     }
 });
+window.onpopstate = () => {
+    const lastPage = localStorage.getItem('lastPage');
+    const lastUrl = localStorage.getItem('lastPageUrl');
+
+    if (lastPage && lastUrl) {
+        loadPage(lastUrl, lastPage);
+    }
+};
+
+

@@ -1,3 +1,15 @@
+<script>
+    // Protection for individual page files
+    (function() {
+        const isLoggedIn = sessionStorage.getItem('isLoggedIn');
+        
+        if (!isLoggedIn || isLoggedIn !== 'true') {
+            // If accessed directly, redirect to login
+            window.location.href = '../pages/login.html';
+            throw new Error('Not authenticated');
+        }
+    })();
+</script>
 <!-- Sidebar Component -->
 <div class="sidebar">
     <div class="sidebar-header">

@@ -1,184 +1,184 @@
 // Enhanced Notification System
-const NotificationUI = {
-    // Show toast notification
-    showToast(message, type = 'info') {
-        const toastContainer = this.getToastContainer();
-        const toast = document.createElement('div');
-        toast.className = `toast align-items-center text-white bg-${type} border-0`;
-        toast.setAttribute('role', 'alert');
-        toast.innerHTML = `
-            <div class="d-flex">
-                <div class="toast-body">
-                    <i class="fas fa-${this.getIcon(type)} me-2"></i>
-                    ${message}
-                </div>
-                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-            </div>
-        `;
+// const NotificationUI = {
+//     // Show toast notification
+//     showToast(message, type = 'info') {
+//         const toastContainer = this.getToastContainer();
+//         const toast = document.createElement('div');
+//         toast.className = `toast align-items-center text-white bg-${type} border-0`;
+//         toast.setAttribute('role', 'alert');
+//         toast.innerHTML = `
+//             <div class="d-flex">
+//                 <div class="toast-body">
+//                     <i class="fas fa-${this.getIcon(type)} me-2"></i>
+//                     ${message}
+//                 </div>
+//                 <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+//             </div>
+//         `;
         
-        toastContainer.appendChild(toast);
-        const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
-        bsToast.show();
+//         toastContainer.appendChild(toast);
+//         const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
+//         bsToast.show();
         
-        toast.addEventListener('hidden.bs.toast', () => toast.remove());
-    },
+//         toast.addEventListener('hidden.bs.toast', () => toast.remove());
+//     },
     
-    // Show confirmation modal
-    showConfirm(options) {
-        return new Promise((resolve) => {
-            const modal = document.createElement('div');
-            modal.className = 'modal fade';
-            modal.innerHTML = `
-                <div class="modal-dialog modal-dialog-centered">
-                    <div class="modal-content">
-                        <div class="modal-header bg-${options.type || 'warning'} text-white">
-                            <h5 class="modal-title">
-                                <i class="fas fa-${this.getIcon(options.type || 'warning')} me-2"></i>
-                                ${options.title || 'Confirm Action'}
-                            </h5>
-                            <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                        </div>
-                        <div class="modal-body">
-                            <p class="mb-0">${options.message}</p>
-                            ${options.detail ? `<small class="text-muted">${options.detail}</small>` : ''}
-                        </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                <i class="fas fa-times me-1"></i> Cancel
-                            </button>
-                            <button type="button" class="btn btn-${options.type || 'warning'}" id="confirmBtn">
-                                <i class="fas fa-check me-1"></i> ${options.confirmText || 'Confirm'}
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            `;
+//     // Show confirmation modal
+//     showConfirm(options) {
+//         return new Promise((resolve) => {
+//             const modal = document.createElement('div');
+//             modal.className = 'modal fade';
+//             modal.innerHTML = `
+//                 <div class="modal-dialog modal-dialog-centered">
+//                     <div class="modal-content">
+//                         <div class="modal-header bg-${options.type || 'warning'} text-white">
+//                             <h5 class="modal-title">
+//                                 <i class="fas fa-${this.getIcon(options.type || 'warning')} me-2"></i>
+//                                 ${options.title || 'Confirm Action'}
+//                             </h5>
+//                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+//                         </div>
+//                         <div class="modal-body">
+//                             <p class="mb-0">${options.message}</p>
+//                             ${options.detail ? `<small class="text-muted">${options.detail}</small>` : ''}
+//                         </div>
+//                         <div class="modal-footer">
+//                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+//                                 <i class="fas fa-times me-1"></i> Cancel
+//                             </button>
+//                             <button type="button" class="btn btn-${options.type || 'warning'}" id="confirmBtn">
+//                                 <i class="fas fa-check me-1"></i> ${options.confirmText || 'Confirm'}
+//                             </button>
+//                         </div>
+//                     </div>
+//                 </div>
+//             `;
             
-            document.body.appendChild(modal);
-            const bsModal = new bootstrap.Modal(modal);
-            bsModal.show();
+//             document.body.appendChild(modal);
+//             const bsModal = new bootstrap.Modal(modal);
+//             bsModal.show();
             
-            modal.querySelector('#confirmBtn').addEventListener('click', () => {
-                bsModal.hide();
-                resolve(true);
-            });
+//             modal.querySelector('#confirmBtn').addEventListener('click', () => {
+//                 bsModal.hide();
+//                 resolve(true);
+//             });
             
-            modal.addEventListener('hidden.bs.modal', () => {
-                modal.remove();
-                resolve(false);
-            });
-        });
-    },
+//             modal.addEventListener('hidden.bs.modal', () => {
+//                 modal.remove();
+//                 resolve(false);
+//             });
+//         });
+//     },
     
-    // Show password generated modal
-    showPasswordModal(password, username) {
-        const modal = document.createElement('div');
-        modal.className = 'modal fade';
-        modal.innerHTML = `
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header bg-success text-white">
-                        <h5 class="modal-title">
-                            <i class="fas fa-check-circle me-2"></i>
-                            User Created Successfully
-                        </h5>
-                    </div>
-                    <div class="modal-body">
-                        <div class="alert alert-warning mb-3">
-                            <i class="fas fa-exclamation-triangle me-2"></i>
-                            <strong>Important:</strong> Please save this password securely. It cannot be recovered later.
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Username</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control" value="${username}" readonly>
-                                <button class="btn btn-outline-secondary" onclick="navigator.clipboard.writeText('${username}')">
-                                    <i class="fas fa-copy"></i>
-                                </button>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label fw-bold">Generated Password</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control bg-light fw-bold text-primary" value="${password}" readonly id="genPassword">
-                                <button class="btn btn-outline-secondary" onclick="navigator.clipboard.writeText('${password}'); NotificationUI.showToast('Password copied to clipboard!', 'success')">
-                                    <i class="fas fa-copy"></i>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
-                            <i class="fas fa-check me-1"></i> I've Saved the Password
-                        </button>
-                    </div>
-                </div>
-            </div>
-        `;
+//     // Show password generated modal
+//     showPasswordModal(password, username) {
+//         const modal = document.createElement('div');
+//         modal.className = 'modal fade';
+//         modal.innerHTML = `
+//             <div class="modal-dialog modal-dialog-centered">
+//                 <div class="modal-content">
+//                     <div class="modal-header bg-success text-white">
+//                         <h5 class="modal-title">
+//                             <i class="fas fa-check-circle me-2"></i>
+//                             User Created Successfully
+//                         </h5>
+//                     </div>
+//                     <div class="modal-body">
+//                         <div class="alert alert-warning mb-3">
+//                             <i class="fas fa-exclamation-triangle me-2"></i>
+//                             <strong>Important:</strong> Please save this password securely. It cannot be recovered later.
+//                         </div>
+//                         <div class="mb-3">
+//                             <label class="form-label fw-bold">Username</label>
+//                             <div class="input-group">
+//                                 <input type="text" class="form-control" value="${username}" readonly>
+//                                 <button class="btn btn-outline-secondary" onclick="navigator.clipboard.writeText('${username}')">
+//                                     <i class="fas fa-copy"></i>
+//                                 </button>
+//                             </div>
+//                         </div>
+//                         <div class="mb-3">
+//                             <label class="form-label fw-bold">Generated Password</label>
+//                             <div class="input-group">
+//                                 <input type="text" class="form-control bg-light fw-bold text-primary" value="${password}" readonly id="genPassword">
+//                                 <button class="btn btn-outline-secondary" onclick="navigator.clipboard.writeText('${password}'); NotificationUI.showToast('Password copied to clipboard!', 'success')">
+//                                     <i class="fas fa-copy"></i>
+//                                 </button>
+//                             </div>
+//                         </div>
+//                     </div>
+//                     <div class="modal-footer">
+//                         <button type="button" class="btn btn-primary" data-bs-dismiss="modal">
+//                             <i class="fas fa-check me-1"></i> I've Saved the Password
+//                         </button>
+//                     </div>
+//                 </div>
+//             </div>
+//         `;
         
-        document.body.appendChild(modal);
-        const bsModal = new bootstrap.Modal(modal, { backdrop: 'static' });
-        bsModal.show();
+//         document.body.appendChild(modal);
+//         const bsModal = new bootstrap.Modal(modal, { backdrop: 'static' });
+//         bsModal.show();
         
-        modal.addEventListener('hidden.bs.modal', () => modal.remove());
-    },
+//         modal.addEventListener('hidden.bs.modal', () => modal.remove());
+//     },
     
-    // Show error modal
-    showError(message, details = null) {
-        const modal = document.createElement('div');
-        modal.className = 'modal fade';
-        modal.innerHTML = `
-            <div class="modal-dialog modal-dialog-centered">
-                <div class="modal-content">
-                    <div class="modal-header bg-danger text-white">
-                        <h5 class="modal-title">
-                            <i class="fas fa-exclamation-circle me-2"></i>
-                            Error
-                        </h5>
-                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                    </div>
-                    <div class="modal-body">
-                        <p class="mb-0">${message}</p>
-                        ${details ? `<small class="text-muted d-block mt-2">${details}</small>` : ''}
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-                    </div>
-                </div>
-            </div>
-        `;
+//     // Show error modal
+//     showError(message, details = null) {
+//         const modal = document.createElement('div');
+//         modal.className = 'modal fade';
+//         modal.innerHTML = `
+//             <div class="modal-dialog modal-dialog-centered">
+//                 <div class="modal-content">
+//                     <div class="modal-header bg-danger text-white">
+//                         <h5 class="modal-title">
+//                             <i class="fas fa-exclamation-circle me-2"></i>
+//                             Error
+//                         </h5>
+//                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+//                     </div>
+//                     <div class="modal-body">
+//                         <p class="mb-0">${message}</p>
+//                         ${details ? `<small class="text-muted d-block mt-2">${details}</small>` : ''}
+//                     </div>
+//                     <div class="modal-footer">
+//                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+//                     </div>
+//                 </div>
+//             </div>
+//         `;
         
-        document.body.appendChild(modal);
-        const bsModal = new bootstrap.Modal(modal);
-        bsModal.show();
+//         document.body.appendChild(modal);
+//         const bsModal = new bootstrap.Modal(modal);
+//         bsModal.show();
         
-        modal.addEventListener('hidden.bs.modal', () => modal.remove());
-    },
+//         modal.addEventListener('hidden.bs.modal', () => modal.remove());
+//     },
     
-    // Helper methods
-    getToastContainer() {
-        let container = document.getElementById('toastContainer');
-        if (!container) {
-            container = document.createElement('div');
-            container.id = 'toastContainer';
-            container.className = 'toast-container position-fixed top-0 end-0 p-3';
-            container.style.zIndex = '9999';
-            document.body.appendChild(container);
-        }
-        return container;
-    },
+//     // Helper methods
+//     getToastContainer() {
+//         let container = document.getElementById('toastContainer');
+//         if (!container) {
+//             container = document.createElement('div');
+//             container.id = 'toastContainer';
+//             container.className = 'toast-container position-fixed top-0 end-0 p-3';
+//             container.style.zIndex = '9999';
+//             document.body.appendChild(container);
+//         }
+//         return container;
+//     },
     
-    getIcon(type) {
-        const icons = {
-            success: 'check-circle',
-            danger: 'exclamation-circle',
-            warning: 'exclamation-triangle',
-            info: 'info-circle',
-            primary: 'info-circle'
-        };
-        return icons[type] || 'info-circle';
-    }
-};
+//     getIcon(type) {
+//         const icons = {
+//             success: 'check-circle',
+//             danger: 'exclamation-circle',
+//             warning: 'exclamation-triangle',
+//             info: 'info-circle',
+//             primary: 'info-circle'
+//         };
+//         return icons[type] || 'info-circle';
+//     }
+// };
 
 // Fetch roles and departments
 function fetchRolesAndDepartments() {
