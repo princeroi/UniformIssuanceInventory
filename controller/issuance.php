@@ -1,5 +1,7 @@
 <?php
 require 'config.php';
+session_start(); // Add session to get logged-in user info
+
 header('Content-Type: application/json');
 
 function sendResponse($success, $message, $data = null) {
@@ -44,8 +46,19 @@ function getIssuances($pdo) {
         $dateFrom = $_GET['date_from'] ?? '';
         $dateTo = $_GET['date_to'] ?? '';
         
+        // Get current user info from session - USE USER_ID NOW
+        $currentUserId = $_SESSION['user_id'] ?? '';
+        $currentUserRole = strtolower($_SESSION['role_name'] ?? '');
+        
         $query = "SELECT * FROM issuance_transactions WHERE 1=1";
         $params = [];
+        
+        // ROLE-BASED FILTERING: Filter by issued_by_user_id instead of name
+        if ($currentUserRole === 'recruiter' || $currentUserRole === 'supervisor') {
+            $query .= " AND issued_by_id = ?";
+            $params[] = $currentUserId;
+        }
+        // Administrators and Managers see all issuances (no additional filter)
         
         if (!empty($search)) {
             $query .= " AND (employee_name LIKE ? OR transaction_id LIKE ? OR issued_by LIKE ?)";
@@ -91,6 +104,10 @@ function getIssuanceById($pdo) {
     }
     
     try {
+        // Get current user info from session - USE USER_ID NOW
+        $currentUserId = $_SESSION['user_id'] ?? '';
+        $currentUserRole = strtolower($_SESSION['role_name'] ?? '');
+        
         // Get issuance transaction details
         $stmt = $pdo->prepare("SELECT * FROM issuance_transactions WHERE id = ?");
         $stmt->execute([$id]);
@@ -98,6 +115,12 @@ function getIssuanceById($pdo) {
         
         if (!$issuance) {
             sendResponse(false, 'Issuance not found');
+        }
+        
+        // ROLE-BASED ACCESS: Filter by issued_by_user_id instead of name
+        if (($currentUserRole === 'recruiter' || $currentUserRole === 'supervisor') 
+            && $issuance['issued_by_id'] !== $currentUserId) {
+            sendResponse(false, 'Access denied: You can only view issuances you created');
         }
         
         // Get all items for this transaction
@@ -121,36 +144,55 @@ function getIssuanceById($pdo) {
 
 function getIssuanceStats($pdo) {
     try {
+        // Get current user info from session - USE USER_ID NOW
+        $currentUserId = $_SESSION['user_id'] ?? '';
+        $currentUserRole = strtolower($_SESSION['role_name'] ?? '');
+        
+        // Base WHERE clause for role-based filtering
+        $whereClause = "";
+        $params = [];
+        
+        if ($currentUserRole === 'recruiter' || $currentUserRole === 'supervisor') {
+            $whereClause = " WHERE issued_by_id = ?";
+            $params[] = $currentUserId;
+        }
+        
         // Total issuances
-        $stmt = $pdo->query("SELECT COUNT(*) as total FROM issuance_transactions");
+        $stmt = $pdo->prepare("SELECT COUNT(*) as total FROM issuance_transactions" . $whereClause);
+        $stmt->execute($params);
         $total = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
         
         // This month's issuances
-        $stmt = $pdo->query("
+        $stmt = $pdo->prepare("
             SELECT COUNT(*) as total 
             FROM issuance_transactions 
             WHERE MONTH(issuance_date) = MONTH(CURRENT_DATE()) 
-            AND YEAR(issuance_date) = YEAR(CURRENT_DATE())
-        ");
+            AND YEAR(issuance_date) = YEAR(CURRENT_DATE())"
+            . ($whereClause ? " AND issued_by_id = ?" : "")
+        );
+        $stmt->execute($whereClause ? $params : []);
         $thisMonth = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
         
         // Total items issued
-        $stmt = $pdo->query("SELECT SUM(total_items) as total FROM issuance_transactions");
+        $stmt = $pdo->prepare("SELECT SUM(total_items) as total FROM issuance_transactions" . $whereClause);
+        $stmt->execute($params);
         $totalItems = $stmt->fetch(PDO::FETCH_ASSOC)['total'] ?? 0;
         
         // By issuance type
-        $stmt = $pdo->query("
+        $stmt = $pdo->prepare("
             SELECT issuance_type, COUNT(*) as count 
-            FROM issuance_transactions 
+            FROM issuance_transactions" . $whereClause . "
             GROUP BY issuance_type
         ");
+        $stmt->execute($params);
         $byType = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         sendResponse(true, 'Statistics retrieved successfully', [
             'total' => $total,
             'this_month' => $thisMonth,
             'total_items' => $totalItems,
-            'by_type' => $byType
+            'by_type' => $byType,
+            'filtered_by' => $currentUserRole === 'recruiter' || $currentUserRole === 'supervisor' ? $currentUserId : 'all'
         ]);
         
     } catch (PDOException $e) {

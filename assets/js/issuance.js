@@ -1,93 +1,57 @@
-// Enhanced Notification System
-// const NotificationUI = {
-//     showToast(message, type = 'info') {
-//         const toastContainer = this.getToastContainer();
-//         const toast = document.createElement('div');
-//         toast.className = `toast align-items-center text-white bg-${type} border-0`;
-//         toast.setAttribute('role', 'alert');
-//         toast.innerHTML = `
-//             <div class="d-flex">
-//                 <div class="toast-body">
-//                     <i class="fas fa-${this.getIcon(type)} me-2"></i>
-//                     ${message}
-//                 </div>
-//                 <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-//             </div>
-//         `;
-        
-//         toastContainer.appendChild(toast);
-//         const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
-//         bsToast.show();
-        
-//         toast.addEventListener('hidden.bs.toast', () => toast.remove());
-//     },
-    
-//     showError(message, details = null) {
-//         const modal = document.createElement('div');
-//         modal.className = 'modal fade';
-//         modal.innerHTML = `
-//             <div class="modal-dialog modal-dialog-centered">
-//                 <div class="modal-content">
-//                     <div class="modal-header bg-danger text-white">
-//                         <h5 class="modal-title">
-//                             <i class="fas fa-exclamation-circle me-2"></i>
-//                             Error
-//                         </h5>
-//                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-//                     </div>
-//                     <div class="modal-body">
-//                         <p class="mb-0">${message}</p>
-//                         ${details ? `<small class="text-muted d-block mt-2">${details}</small>` : ''}
-//                     </div>
-//                     <div class="modal-footer">
-//                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-//                     </div>
-//                 </div>
-//             </div>
-//         `;
-        
-//         document.body.appendChild(modal);
-//         const bsModal = new bootstrap.Modal(modal);
-//         bsModal.show();
-        
-//         modal.addEventListener('hidden.bs.modal', () => modal.remove());
-//     },
-    
-//     getToastContainer() {
-//         let container = document.getElementById('toastContainer');
-//         if (!container) {
-//             container = document.createElement('div');
-//             container.id = 'toastContainer';
-//             container.className = 'toast-container position-fixed top-0 end-0 p-3';
-//             container.style.zIndex = '9999';
-//             document.body.appendChild(container);
-//         }
-//         return container;
-//     },
-    
-//     getIcon(type) {
-//         const icons = {
-//             success: 'check-circle',
-//             danger: 'exclamation-circle',
-//             warning: 'exclamation-triangle',
-//             info: 'info-circle',
-//             primary: 'info-circle'
-//         };
-//         return icons[type] || 'info-circle';
-//     }
-// };
-
 window.init_issuance = function() {
     window.currentPage = 1;
     window.itemsPerPage = 10;
     window.totalPages = 1;
     window.selectedIssuances = new Set();
+    
+    // Show filter banner for recruiters/supervisors
+    showRoleFilterBanner();
+    
+    // Hide "New Issuance" button for Recruiters and Supervisors
+    hideNewIssuanceButton();
+    
     loadIssuances();
     setupEventListeners();
 };
 
+function hideNewIssuanceButton() {
+    const userRole = (sessionStorage.getItem('userRole') || '').toLowerCase();
+    
+    // Only Administrators and Managers can create new issuances
+    if (userRole === 'recruiter' || userRole === 'supervisor') {
+        setTimeout(() => {
+            const newIssuanceBtn = document.querySelector('button[data-bs-target="#newIssuanceModal"]');
+            if (newIssuanceBtn) {
+                newIssuanceBtn.style.display = 'none';
+            }
+        }, 100);
+    }
+}
+
+function showRoleFilterBanner() {
+    const userRole = (sessionStorage.getItem('userRole') || '').toLowerCase();
+    const userName = sessionStorage.getItem('userName') || '';
+    const userId = sessionStorage.getItem('userId') || '';
+    
+    if (userRole === 'recruiter' || userRole === 'supervisor') {
+        const pageHeader = document.querySelector('.page-header');
+        if (pageHeader) {
+            const banner = document.createElement('div');
+            banner.className = 'alert alert-info mb-3 d-flex align-items-center';
+            banner.style.borderLeft = '4px solid #0dcaf0';
+            banner.innerHTML = `
+                <i class="fas fa-filter me-2" style="font-size: 1.2rem;"></i>
+                <div>
+                    <strong>Filtered View:</strong> You are viewing only issuances you created (User ID: <strong>${userId}</strong> - ${userName}).
+                    ${userRole === 'supervisor' ? '<br><small class="text-muted">Administrators and Managers can view all issuances.</small>' : ''}
+                </div>
+            `;
+            pageHeader.after(banner);
+        }
+    }
+}
+
 function setupEventListeners() {
-    // Search input - trigger on input (real-time search)
     const searchInput = document.getElementById('searchInput');
     if (searchInput) {
         let searchTimeout;
@@ -99,7 +63,6 @@ function setupEventListeners() {
         });
     }
 
-    // Filter dropdowns - trigger on change
     const issuanceTypeFilter = document.getElementById('issuanceTypeFilter');
     if (issuanceTypeFilter) {
         issuanceTypeFilter.addEventListener('change', () => loadIssuances(1));
@@ -140,7 +103,6 @@ function toggleIssuanceSelection(id) {
         window.selectedIssuances.add(id);
     }
     
-    // Update select all checkbox
     const selectAllCheckbox = document.getElementById('selectAll');
     const checkboxes = document.querySelectorAll('.issuance-checkbox');
     const allChecked = Array.from(checkboxes).every(cb => cb.checked);
@@ -194,7 +156,6 @@ async function loadIssuances(page = 1) {
         if (result.success) {
             const allIssuances = result.data || [];
             
-            // Calculate pagination
             window.totalPages = Math.ceil(allIssuances.length / window.itemsPerPage);
             const startIndex = (page - 1) * window.itemsPerPage;
             const endIndex = startIndex + window.itemsPerPage;
@@ -264,7 +225,6 @@ async function loadIssuances(page = 1) {
             <i class="fas fa-exclamation-triangle me-2"></i>
             Error loading issuances. Please try again.
         </td></tr>`;
-        NotificationUI.showError('Failed to load issuances', error.message);
         updatePagination();
     }
 }
@@ -365,12 +325,12 @@ function changePage(page) {
 
 async function printBulkIssuances() {
     if (window.selectedIssuances.size === 0) {
-        NotificationUI.showToast('Please select at least one issuance to print', 'warning');
+        showToast('Please select at least one issuance to print', 'warning');
         return;
     }
 
     try {
-        NotificationUI.showToast('Loading issuances for printing...', 'info');
+        showToast('Loading issuances for printing...', 'info');
         
         const issuanceIds = Array.from(window.selectedIssuances);
         const issuancePromises = issuanceIds.map(id => 
@@ -383,7 +343,7 @@ async function printBulkIssuances() {
             .map(r => r.data);
 
         if (validIssuances.length === 0) {
-            NotificationUI.showError('Failed to load any issuances');
+            showToast('Failed to load any issuances', 'danger');
             return;
         }
 
@@ -391,7 +351,7 @@ async function printBulkIssuances() {
         
     } catch (err) {
         console.error(err);
-        NotificationUI.showError('Error loading issuances', err.message);
+        showToast('Error loading issuances: ' + err.message, 'danger');
     }
 }
 
@@ -400,7 +360,6 @@ function printMultipleReceipts(issuances) {
     
     let receiptsHTML = '';
     
-    // Process issuances in pairs (2 per page)
     for (let i = 0; i < issuances.length; i += 2) {
         const issuance1 = issuances[i];
         const issuance2 = issuances[i + 1];
@@ -616,7 +575,8 @@ async function viewIssuanceDetails(id) {
         const result = await response.json();
 
         if (!result.success) {
-            return NotificationUI.showError('Failed to load issuance details', result.message);
+            showToast('Failed to load issuance details: ' + result.message, 'danger');
+            return;
         }
 
         const issuance = result.data;
@@ -734,7 +694,7 @@ async function viewIssuanceDetails(id) {
 
     } catch (err) {
         console.error(err);
-        NotificationUI.showError('Failed to load issuance details', err.message);
+        showToast('Failed to load issuance details: ' + err.message, 'danger');
     }
 }
 
@@ -744,14 +704,15 @@ async function printIssuance(id) {
         const result = await response.json();
 
         if (!result.success) {
-            return NotificationUI.showError('Failed to load issuance details', result.message);
+            showToast('Failed to load issuance details: ' + result.message, 'danger');
+            return;
         }
 
         printMultipleReceipts([result.data]);
 
     } catch (err) {
         console.error(err);
-        NotificationUI.showError('Error loading issuance details', 'Please check your connection and try again.');
+        showToast('Error loading issuance details. Please try again.', 'danger');
     }
 }
 
@@ -791,4 +752,16 @@ function escapeHtml(text) {
     if (!text) return '';
     const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
     return String(text).replace(/[&<>"']/g, m => map[m]);
+}
+
+function showToast(message, type = 'info') {
+    const colors = { success: '#28a745', warning: '#ffc107', info: '#17a2b8', danger: '#dc3545' };
+    const toast = document.createElement('div');
+    toast.style.cssText = `position:fixed;top:20px;right:20px;background:${colors[type] || colors.info};color:white;padding:15px 20px;border-radius:5px;box-shadow:0 4px 6px rgba(0,0,0,0.1);z-index:9999;animation:slideIn 0.3s ease;`;
+    toast.textContent = message;
+    document.body.appendChild(toast);
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }

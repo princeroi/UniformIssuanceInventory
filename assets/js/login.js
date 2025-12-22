@@ -1,7 +1,4 @@
 // assets/js/login.js
-// File is login.php (NOT loginp.php)
-// login.html is in pages/ folder
-
 document.getElementById("loginForm").addEventListener("submit", async function (e) {
     e.preventDefault();
 
@@ -16,7 +13,6 @@ document.getElementById("loginForm").addEventListener("submit", async function (
     btn.disabled = true;
 
     try {
-        // Correct path: ../controller/login.php
         const response = await fetch("../controller/login.php", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -27,7 +23,6 @@ document.getElementById("loginForm").addEventListener("submit", async function (
         });
 
         console.log("HTTP status:", response.status);
-        console.log("Request URL:", response.url);
 
         if (!response.ok) {
             throw new Error(`HTTP error! status: ${response.status}`);
@@ -37,17 +32,29 @@ document.getElementById("loginForm").addEventListener("submit", async function (
         console.log("Response data:", data);
 
         if (data.success) {
-            // Set client-side session flag
+            // Set client-side session with ROLE and PERMISSIONS
             sessionStorage.setItem('isLoggedIn', 'true');
             sessionStorage.setItem('userName', data.user.name);
             sessionStorage.setItem('userId', data.user.user_id);
+            sessionStorage.setItem('userRole', data.user.role_name);
+            sessionStorage.setItem('roleId', data.user.role_id);
+            sessionStorage.setItem('permissions', JSON.stringify(data.user.permissions));
             
-            // // Show success message
-            // showAlert("Login successful! Redirecting...", 'success');
+            console.log('User logged in:', {
+                name: data.user.name,
+                role: data.user.role_name,
+                permissions: data.user.permissions
+            });
             
-            // Redirect to index.html
+            // Redirect based on role
             setTimeout(() => {
-                window.location.href = "../index.php";
+                if (data.user.role_name.toLowerCase() === 'recruiter') {
+                    // Recruiters go directly to POS
+                    window.location.href = "../index.php?page=pos";
+                } else {
+                    // Others go to dashboard
+                    window.location.href = "../index.php";
+                }
             }, 500);
         } else {
             showAlert(data.message, 'danger');

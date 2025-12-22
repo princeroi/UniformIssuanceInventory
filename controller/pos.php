@@ -1,16 +1,16 @@
 <?php
-// pos.php - Place this in controller/pos.php
+// pos.php - Updated to track both user_id and name
 require_once 'config.php';
+session_start(); // Add session support
+
 header('Content-Type: application/json');
 
 try {
-    // Create PDO connection using variables from config.php
     $pdo = new PDO($dsn, $user, $pass, $options);
     
     $action = $_GET['action'] ?? $_POST['action'] ?? '';
     
     if ($action === 'getItems') {
-        // Get all items
         $checkStmt = $pdo->query("SELECT COUNT(*) as total FROM items");
         $totalCount = $checkStmt->fetch(PDO::FETCH_ASSOC);
         
@@ -154,7 +154,10 @@ try {
         $siteAssigned = $_POST['site_assigned'] ?? '';
         $issuanceType = $_POST['issuance_type'] ?? '';
         $itemsJson = $_POST['items'] ?? '';
-        $issuedBy = $_POST['issued_by'] ?? 'System';
+        
+        // GET BOTH USER_ID AND NAME FROM SESSION
+        $issuedByUserId = $_SESSION['user_id'] ?? null;
+        $issuedByName = $_SESSION['name'] ?? 'Unknown User';
         
         // Validate input
         if (empty($employeeName)) {
@@ -177,6 +180,14 @@ try {
             echo json_encode([
                 'success' => false,
                 'message' => 'No items in cart'
+            ]);
+            exit;
+        }
+        
+        if (!$issuedByUserId) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Session expired. Please login again.'
             ]);
             exit;
         }
@@ -212,11 +223,11 @@ try {
                 $checkStmt->execute([$transactionId]);
             }
             
-            // Insert into issuance_transactions table (with site_assigned)
+            // Insert into issuance_transactions table with BOTH user_id and name
             $stmt = $pdo->prepare("
                 INSERT INTO issuance_transactions 
-                (transaction_id, employee_name, issuance_type, site_assigned, total_items, issued_by, issuance_date) 
-                VALUES (?, ?, ?, ?, ?, ?, NOW())
+                (transaction_id, employee_name, issuance_type, site_assigned, total_items, issued_by, issued_by_id, issuance_date) 
+                VALUES (?, ?, ?, ?, ?, ?, ?, NOW())
             ");
             
             $stmt->execute([
@@ -225,7 +236,8 @@ try {
                 $issuanceType,
                 $siteAssigned,
                 $totalItems,
-                $issuedBy
+                $issuedByName,      // Store name for display
+                $issuedByUserId     // Store user_id for filtering
             ]);
             
             // Insert issuance items and deduct quantities
@@ -262,7 +274,7 @@ try {
                     throw new Exception("Insufficient stock for {$itemName}. Available: {$currentItem['quantity']}, Requested: {$quantity}");
                 }
                 
-                // Insert detail record with site_assigned
+                // Insert detail record
                 $stmtDetail->execute([
                     $transactionId,
                     $itemCode,
@@ -292,7 +304,8 @@ try {
                     'site_assigned' => $siteAssigned,
                     'issuance_type' => $issuanceType,
                     'total_items' => $totalItems,
-                    'issued_by' => $issuedBy,
+                    'issued_by' => $issuedByName,
+                    'issued_by_id' => $issuedByUserId,
                     'items_count' => count($cartItems)
                 ]
             ]);
