@@ -32,7 +32,6 @@ document.getElementById("loginForm").addEventListener("submit", async function (
         console.log("Response data:", data);
 
         if (data.success) {
-            // Check if user is Active (double check client-side)
             if (data.user.status !== 'Active') {
                 showAlert('Your account is inactive. Please contact your administrator.', 'warning', true);
                 
@@ -51,30 +50,30 @@ document.getElementById("loginForm").addEventListener("submit", async function (
             sessionStorage.setItem('userRole', data.user.role_name);
             sessionStorage.setItem('roleId', data.user.role_id);
             sessionStorage.setItem('userStatus', data.user.status);
+            
+            // Store simplified permissions (for menu visibility)
             sessionStorage.setItem('permissions', JSON.stringify(data.user.permissions));
+            
+            // Store detailed permissions (for granular access control - add/edit/delete)
+            sessionStorage.setItem('user_permissions', JSON.stringify(data.user.permissions_detailed));
             
             console.log('User logged in:', {
                 name: data.user.name,
                 role: data.user.role_name,
                 status: data.user.status,
-                permissions: data.user.permissions
+                permissions: data.user.permissions,
+                detailed_permissions: data.user.permissions_detailed
             });
-            
-            // Show success message
-            // showAlert('Login successful! Redirecting...', 'success');
             
             // Redirect based on role
             setTimeout(() => {
                 if (data.user.role_name.toLowerCase() === 'recruiter') {
-                    // Recruiters go directly to POS
                     window.location.href = "../index.php?page=pos";
                 } else {
-                    // Others go to dashboard
                     window.location.href = "../index.php";
                 }
             }, 1000);
         } else {
-            // Handle different error types
             if (data.error_type === 'inactive_account') {
                 showAlert(data.message, 'warning', true);
             } else {
@@ -100,7 +99,6 @@ document.getElementById("loginForm").addEventListener("submit", async function (
     }
 });
 
-// Helper function to show alerts with icons and better styling
 function showAlert(message, type = 'danger', isInactiveAccount = false) {
     const alertContainer = document.getElementById('alertContainer');
     
@@ -113,7 +111,6 @@ function showAlert(message, type = 'danger', isInactiveAccount = false) {
     
     const icon = iconMap[type] || 'info-circle';
     
-    // Special handling for inactive account - show modal instead
     if (isInactiveAccount) {
         showInactiveAccountModal(message);
         return;
@@ -128,7 +125,6 @@ function showAlert(message, type = 'danger', isInactiveAccount = false) {
             </div>
         `;
         
-        // Auto-dismiss after 5 seconds for non-critical alerts
         if (type === 'success' || type === 'info') {
             setTimeout(() => {
                 const alert = alertContainer.querySelector('.alert');
@@ -143,9 +139,7 @@ function showAlert(message, type = 'danger', isInactiveAccount = false) {
     }
 }
 
-// Show inactive account modal with professional UI
 function showInactiveAccountModal(message) {
-    // Remove any existing modal
     const existingModal = document.getElementById('inactiveAccountModal');
     if (existingModal) {
         existingModal.remove();
@@ -173,7 +167,7 @@ function showInactiveAccountModal(message) {
                     <div class="alert alert-light border">
                         <small class="text-muted">
                             <i class="fas fa-info-circle me-2"></i>
-                            If you believe this is an error, please reach out to your system administrator for assistance.
+                            If you believe this is an error, please reach out to your system administrator.
                         </small>
                     </div>
                 </div>
@@ -198,7 +192,6 @@ function showInactiveAccountModal(message) {
     });
 }
 
-// Clear alerts when user starts typing
 document.getElementById('user_id')?.addEventListener('input', () => {
     const alertContainer = document.getElementById('alertContainer');
     if (alertContainer) {

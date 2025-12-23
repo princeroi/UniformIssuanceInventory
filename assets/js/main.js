@@ -1,6 +1,6 @@
 // assets/js/main.js
 // ============================================
-// ROLE-BASED ACCESS CONTROL FUNCTIONS
+// ENHANCED ROLE-BASED ACCESS CONTROL WITH PER-USER PERMISSIONS
 // ============================================
 
 function getUserPermissions() {
@@ -10,6 +10,7 @@ function getUserPermissions() {
 
 function hasPermission(page) {
     const permissions = getUserPermissions();
+    // User can access if they have view permission
     return permissions[page] === true;
 }
 
@@ -17,22 +18,56 @@ function canModify(page) {
     const permissions = getUserPermissions();
     const userRole = getUserRole().toLowerCase();
     
-    // Administrator and Manager can modify everything
+    // Administrator and Manager can modify everything they can view
     if (userRole === 'administrator' || userRole === 'manager') {
+        return permissions[page] === true;
+    }
+    
+    // Check if user has modify permissions for this specific page
+    if (permissions.can_modify && permissions.can_modify.includes(page)) {
         return true;
     }
     
-    // Supervisor can modify POS and view others
-    if (userRole === 'supervisor') {
-        return page === 'pos' || (permissions.can_modify && permissions.can_modify.includes(page));
-    }
-    
-    // Recruiter can modify POS
-    if (userRole === 'recruiter') {
-        return page === 'pos';
-    }
-    
     return false;
+}
+
+function canAdd(page) {
+    // Check if user has add permission (stored in session from backend)
+    const userPermissions = sessionStorage.getItem('user_permissions');
+    if (!userPermissions) return canModify(page);
+    
+    try {
+        const perms = JSON.parse(userPermissions);
+        return perms[page]?.add === true;
+    } catch {
+        return canModify(page);
+    }
+}
+
+function canEdit(page) {
+    // Check if user has edit permission
+    const userPermissions = sessionStorage.getItem('user_permissions');
+    if (!userPermissions) return canModify(page);
+    
+    try {
+        const perms = JSON.parse(userPermissions);
+        return perms[page]?.edit === true;
+    } catch {
+        return canModify(page);
+    }
+}
+
+function canDelete(page) {
+    // Check if user has delete permission
+    const userPermissions = sessionStorage.getItem('user_permissions');
+    if (!userPermissions) return canModify(page);
+    
+    try {
+        const perms = JSON.parse(userPermissions);
+        return perms[page]?.delete === true;
+    } catch {
+        return canModify(page);
+    }
 }
 
 function getUserRole() {
@@ -55,14 +90,12 @@ function getUserRole() {
         userRole: getUserRole()
     });
     
-    // If not on login page and not logged in, redirect to login
     if (!isLoginPage && (!isLoggedIn || isLoggedIn !== 'true')) {
         console.log('Not logged in - redirecting to login');
         window.location.href = 'pages/login.html';
         return;
     }
     
-    // If on login page and already logged in, redirect to main page
     if (isLoginPage && isLoggedIn === 'true') {
         console.log('Already logged in - redirecting to index');
         window.location.href = '../index.php';
@@ -77,96 +110,100 @@ function getUserRole() {
 function logout() {
     console.log('Logging out...');
     
-    // Clear client-side session
     sessionStorage.clear();
     localStorage.clear();
     
-    // Call server-side logout
     fetch('controller/logout.php')
         .then(() => {
             window.location.href = 'pages/login.html';
         })
         .catch(() => {
-            // Force redirect even if request fails
             window.location.href = 'pages/login.html';
         });
 }
 
 // ============================================
-// APPLY ROLE-BASED UI RESTRICTIONS
+// APPLY ROLE-BASED UI RESTRICTIONS WITH GRANULAR PERMISSIONS
 // ============================================
 
 function applyReadOnlyMode(pageName) {
-    const userRole = getUserRole().toLowerCase();
-    
-    // CRITICAL FIX: Supervisors should NOT have read-only mode on POS
-    if (userRole === 'supervisor' && pageName === 'pos') {
-        console.log('Supervisor on POS - FULL ACCESS, no read-only mode');
-        return; // Exit early - do NOT apply any restrictions
+    // Check if user can modify this specific page
+    if (canModify(pageName)) {
+        console.log(`User can modify ${pageName} - no restrictions applied`);
+        return;
     }
     
-    // Apply read-only mode for supervisors on non-POS pages
-    if (userRole === 'supervisor' && pageName !== 'pos') {
-        setTimeout(() => {
-            const pageContent = document.getElementById('pageContent');
-            if (pageContent) {
-                // Add read-only banner at the top
-                const banner = document.createElement('div');
-                banner.className = 'read-only-banner';
-                banner.innerHTML = `
-                    <i class="fas fa-eye"></i>
-                    <span><strong>View Only Mode</strong> - You can search and view data, but cannot make changes. Use POS to issue uniforms.</span>
-                `;
-                pageContent.insertBefore(banner, pageContent.firstChild);
-                
-                // Mark page as read-only mode
-                pageContent.classList.add('read-only-mode');
-                
-                // Function to hide action buttons and columns
-                function hideActionElements() {
-                    // Remove/hide action buttons
-                    const actionButtons = pageContent.querySelectorAll(`
-                        button.btn-primary:not(.search-btn):not(.filter-btn):not(.btn-search):not(.btn-filter),
-                        button.btn-success,
-                        button.btn-danger,
-                        button.btn-warning,
-                        button.btn-info:not(.search-btn):not(.filter-btn),
-                        .btn-add,
-                        .btn-create,
-                        .btn-edit,
-                        .btn-delete,
-                        .btn-update,
-                        .btn-save,
-                        .btn-submit,
-                        .action-button,
-                        .action-buttons button,
-                        a.btn-primary:not(.search-btn):not(.filter-btn),
-                        a.btn-success,
-                        a.btn-danger,
-                        a.btn-warning
+    // User can only view - apply read-only mode
+    setTimeout(() => {
+        const pageContent = document.getElementById('pageContent');
+        if (pageContent) {
+            // Add read-only banner
+            const banner = document.createElement('div');
+            // banner.className = 'read-only-banner';
+            banner.innerHTML = `
+                <i class="fas fa-eye"></i>
+                <span><strong>View Only Mode</strong> - You can search and view data, but cannot make changes.</span>
+            `;
+            pageContent.insertBefore(banner, pageContent.firstChild);
+            
+            pageContent.classList.add('read-only-mode');
+            
+            // Function to hide/disable action elements
+            function applyRestrictions() {
+                // Hide add buttons if user can't add
+                if (!canAdd(pageName)) {
+                    const addButtons = pageContent.querySelectorAll(`
+                        button.btn-add,
+                        button.btn-create,
+                        .btn-primary:not(.search-btn):not(.filter-btn),
+                        a.btn-primary:not(.search-btn)
                     `);
-                    
-                    actionButtons.forEach(btn => {
-                        // Double check it's not a search/filter button
+                    addButtons.forEach(btn => {
                         const btnText = btn.textContent.toLowerCase();
-                        if (!btnText.includes('search') && 
-                            !btnText.includes('filter') && 
-                            !btnText.includes('find') &&
-                            !btn.classList.contains('search-btn') &&
-                            !btn.classList.contains('filter-btn')) {
+                        if (btnText.includes('add') || btnText.includes('create') || btnText.includes('new')) {
                             btn.style.display = 'none';
                             btn.disabled = true;
                         }
                     });
-                    
-                    // Hide action columns in tables (Edit/Delete columns)
-                    const actionHeaders = pageContent.querySelectorAll('th');
-                    actionHeaders.forEach((th, index) => {
-                        const headerText = th.textContent.toLowerCase();
-                        if (headerText.includes('action') || headerText.includes('edit') || headerText.includes('delete')) {
+                }
+                
+                // Hide edit buttons if user can't edit
+                if (!canEdit(pageName)) {
+                    const editButtons = pageContent.querySelectorAll(`
+                        button.btn-edit,
+                        button.btn-warning,
+                        a.btn-warning
+                    `);
+                    editButtons.forEach(btn => {
+                        btn.style.display = 'none';
+                        btn.disabled = true;
+                    });
+                }
+                
+                // Hide delete buttons if user can't delete
+                if (!canDelete(pageName)) {
+                    const deleteButtons = pageContent.querySelectorAll(`
+                        button.btn-delete,
+                        button.btn-danger,
+                        a.btn-danger
+                    `);
+                    deleteButtons.forEach(btn => {
+                        btn.style.display = 'none';
+                        btn.disabled = true;
+                    });
+                }
+                
+                // Hide action columns in tables
+                const actionHeaders = pageContent.querySelectorAll('th');
+                actionHeaders.forEach((th, index) => {
+                    const headerText = th.textContent.toLowerCase();
+                    if (headerText.includes('action')) {
+                        // Check which actions user can perform
+                        const hasAnyPermission = canAdd(pageName) || canEdit(pageName) || canDelete(pageName);
+                        
+                        if (!hasAnyPermission) {
                             th.style.display = 'none';
                             
-                            // Hide corresponding cells in all rows
                             const table = th.closest('table');
                             if (table) {
                                 const rows = table.querySelectorAll('tbody tr');
@@ -178,69 +215,46 @@ function applyReadOnlyMode(pageName) {
                                 });
                             }
                         }
-                    });
-                }
-                
-                // Initial hiding
-                hideActionElements();
-                
-                // Disable form inputs but keep search/filter inputs enabled
-                const allInputs = pageContent.querySelectorAll('input, select, textarea');
-                allInputs.forEach(input => {
-                    // Check if it's a search/filter input or any data filtering element
-                    const isSearchFilter = 
-                        input.classList.contains('search-input') ||
-                        input.classList.contains('filter-select') ||
-                        input.classList.contains('search') ||
-                        input.classList.contains('filter') ||
-                        input.classList.contains('form-select') || // Keep dropdowns for filtering
-                        input.type === 'search' ||
-                        input.type === 'date' || // Keep date pickers for filtering
-                        input.type === 'checkbox' && input.closest('.filter-box') || // Keep filter checkboxes
-                        input.placeholder?.toLowerCase().includes('search') ||
-                        input.placeholder?.toLowerCase().includes('filter') ||
-                        input.closest('.search-box') ||
-                        input.closest('.filter-box') ||
-                        input.closest('.filter-section') ||
-                        input.closest('.search-section') ||
-                        input.id?.toLowerCase().includes('filter') ||
-                        input.id?.toLowerCase().includes('search') ||
-                        input.name?.toLowerCase().includes('filter') ||
-                        input.name?.toLowerCase().includes('search');
-                    
-                    // Additional check: if it's in a table header (likely a filter)
-                    const isInTableHeader = input.closest('thead') !== null;
-                    
-                    if (!isSearchFilter && !isInTableHeader) {
-                        input.disabled = true;
-                        input.style.opacity = '0.6';
-                        input.style.cursor = 'not-allowed';
                     }
                 });
-                
-                // Watch for dynamically added content (like filtered results)
-                const observer = new MutationObserver((mutations) => {
-                    mutations.forEach((mutation) => {
-                        if (mutation.type === 'childList' && mutation.addedNodes.length > 0) {
-                            // Re-apply hiding to newly added elements
-                            hideActionElements();
-                        }
-                    });
-                });
-                
-                // Start observing the page content for changes
-                observer.observe(pageContent, {
-                    childList: true,
-                    subtree: true
-                });
-                
-                // Store observer reference to disconnect later if needed
-                pageContent._readOnlyObserver = observer;
-                
-                console.log('Read-only mode applied with mutation observer for supervisor on:', pageName);
             }
-        }, 100);
-    }
+            
+            // Initial application
+            applyRestrictions();
+            
+            // Disable form inputs (but keep search/filter inputs enabled)
+            const allInputs = pageContent.querySelectorAll('input, select, textarea');
+            allInputs.forEach(input => {
+                const isSearchFilter = 
+                    input.classList.contains('search-input') ||
+                    input.classList.contains('filter-select') ||
+                    input.type === 'search' ||
+                    input.type === 'date' ||
+                    input.closest('.search-box') ||
+                    input.closest('.filter-box');
+                
+                if (!isSearchFilter) {
+                    input.disabled = true;
+                    input.style.opacity = '0.6';
+                    input.style.cursor = 'not-allowed';
+                }
+            });
+            
+            // Watch for dynamic content
+            const observer = new MutationObserver(() => {
+                applyRestrictions();
+            });
+            
+            observer.observe(pageContent, {
+                childList: true,
+                subtree: true
+            });
+            
+            pageContent._readOnlyObserver = observer;
+            
+            console.log('Read-only mode applied for:', pageName);
+        }
+    }, 100);
 }
 
 function applyRoleBasedUI() {
@@ -260,27 +274,27 @@ function applyRoleBasedUI() {
         }
     });
     
-    // Update user display
-    const userNameElements = document.querySelectorAll('.user-name, .navbar .dropdown-toggle span');
-    userNameElements.forEach(el => {
-        const userName = sessionStorage.getItem('userName');
-        if (userName) {
-            el.textContent = userName;
-        }
-    });
+    // // Update user display
+    // const userNameElements = document.querySelectorAll('.user-name, .navbar .dropdown-toggle span');
+    // userNameElements.forEach(el => {
+    //     const userName = sessionStorage.getItem('userName');
+    //     if (userName) {
+    //         el.textContent = userName;
+    //     }
+    // });
     
     // Add role badge
-    const userDropdown = document.querySelector('.navbar .dropdown-toggle');
-    if (userDropdown && userRole) {
-        let roleBadge = userDropdown.querySelector('.role-badge');
-        if (!roleBadge) {
-            roleBadge = document.createElement('span');
-            roleBadge.className = 'badge bg-primary role-badge ms-2';
-            roleBadge.style.fontSize = '0.7rem';
-            userDropdown.appendChild(roleBadge);
-        }
-        roleBadge.textContent = userRole;
-    }
+    // const userDropdown = document.querySelector('.navbar .dropdown-toggle');
+    // if (userDropdown && userRole) {
+    //     let roleBadge = userDropdown.querySelector('.role-badge');
+    //     if (!roleBadge) {
+    //         roleBadge = document.createElement('span');
+    //         roleBadge.className = 'badge bg-primary role-badge ms-2';
+    //         roleBadge.style.fontSize = '0.7rem';
+    //         userDropdown.appendChild(roleBadge);
+    //     }
+    //     roleBadge.textContent = userRole;
+    // }
 }
 
 // ============================================
@@ -291,10 +305,8 @@ document.addEventListener('DOMContentLoaded', function() {
     const isLoggedIn = sessionStorage.getItem('isLoggedIn');
     
     if (isLoggedIn === 'true') {
-        // Apply role-based UI immediately
         applyRoleBasedUI();
         
-        // Verify with server that session is still valid
         fetch('controller/verify-session.php')
             .then(response => response.json())
             .then(data => {
@@ -311,7 +323,6 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
     
-    // Attach logout to all logout links
     const logoutLinks = document.querySelectorAll('a[href*="logout"]');
     logoutLinks.forEach(link => {
         link.addEventListener('click', function(e) {
@@ -331,7 +342,6 @@ document.addEventListener("DOMContentLoaded", function() {
     const sidebarToggle = document.getElementById('sidebarToggle');
     const sidebar = document.getElementById('sidebar');
 
-    // Map of page names to their JavaScript modules
     const pageModules = {
         'users': 'assets/js/user-management.js',
         'dashboard': 'assets/js/dashboard.js',
@@ -344,12 +354,8 @@ document.addEventListener("DOMContentLoaded", function() {
         'settings': 'assets/js/settings.js',
     };
 
-    // Track loaded scripts to avoid duplicates
     const loadedScripts = new Set();
 
-    /**
-     * Load a JavaScript file dynamically
-     */
     function loadScript(src) {
         return new Promise((resolve, reject) => {
             if (loadedScripts.has(src)) {
@@ -368,9 +374,6 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    /**
-     * Update active menu item
-     */
     function setActiveMenuItem(pageName) {
         menuItems.forEach(item => {
             const itemPageName = item.getAttribute('data-page');
@@ -378,11 +381,7 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     }
 
-    /**
-     * Load a page with permission check
-     */
     function loadPage(url, pageName) {
-        // Check permission before loading
         if (pageName && !hasPermission(pageName)) {
             pageContent.innerHTML = `
                 <div class="alert alert-warning">
@@ -403,30 +402,23 @@ document.addEventListener("DOMContentLoaded", function() {
             .then(html => {
                 pageContent.innerHTML = html;
 
-                // CRITICAL FIX: Only apply read-only mode for supervisor on NON-POS pages
-                const userRole = getUserRole().toLowerCase();
-                if (userRole === 'supervisor' && pageName !== 'pos') {
+                // Apply read-only mode if user can't modify
+                if (pageName && !canModify(pageName)) {
                     applyReadOnlyMode(pageName);
-                } else if (userRole === 'supervisor' && pageName === 'pos') {
-                    console.log('Supervisor accessing POS - FULL FUNCTIONALITY ENABLED');
                 }
 
                 if (pageName) {
-                    // Save last visited page
                     localStorage.setItem('lastPage', pageName);
                     localStorage.setItem('lastPageUrl', url);
-
                     setActiveMenuItem(pageName);
                 }
 
-                // Load associated JS file
                 if (pageName && pageModules[pageName]) {
                     return loadScript(pageModules[pageName]);
                 }
             })
             .then(() => {
                 if (pageName && typeof window[`init_${pageName}`] === 'function') {
-                    // Ensure DOM is fully painted
                     requestAnimationFrame(() => {
                         window[`init_${pageName}`]();
                     });
@@ -443,9 +435,6 @@ document.addEventListener("DOMContentLoaded", function() {
             });
     }
 
-    /**
-     * Handle menu item clicks with permission check
-     */
     menuItems.forEach(item => {
         item.addEventListener('click', function(e) {
             e.preventDefault();
@@ -453,7 +442,6 @@ document.addEventListener("DOMContentLoaded", function() {
             const pageUrl = this.getAttribute('href');
             const pageName = this.getAttribute('data-page');
 
-            // Double-check permission
             if (pageName && !hasPermission(pageName)) {
                 alert('Access Denied: You do not have permission to access this page.');
                 return;
@@ -463,41 +451,26 @@ document.addEventListener("DOMContentLoaded", function() {
         });
     });
 
-    /**
-     * Sidebar toggle for mobile
-     */
     if (sidebarToggle) {
         sidebarToggle.addEventListener('click', function() {
             sidebar.classList.toggle('collapsed');
         });
     }
 
-    /**
-     * Load initial page based on role
-     */
+    // Load initial page
     const urlParams = new URLSearchParams(window.location.search);
     const requestedPage = urlParams.get('page');
     
     if (requestedPage && hasPermission(requestedPage)) {
-        // Load requested page if permitted
         loadPage(`pages/${requestedPage}.html`, requestedPage);
     } else {
-        // Load default page based on role
-        const userRole = getUserRole().toLowerCase();
+        const lastPage = localStorage.getItem('lastPage');
+        const lastPageUrl = localStorage.getItem('lastPageUrl');
         
-        if (userRole === 'recruiter') {
-            // Recruiters start at POS
-            loadPage('pages/pos.html', 'pos');
+        if (lastPage && lastPageUrl && hasPermission(lastPage)) {
+            loadPage(lastPageUrl, lastPage);
         } else {
-            // Others start at dashboard
-            const lastPage = localStorage.getItem('lastPage');
-            const lastPageUrl = localStorage.getItem('lastPageUrl');
-            
-            if (lastPage && lastPageUrl && hasPermission(lastPage)) {
-                loadPage(lastPageUrl, lastPage);
-            } else {
-                loadPage('pages/dashboard.html', 'dashboard');
-            }
+            loadPage('pages/dashboard.html', 'dashboard');
         }
     }
 });
@@ -510,3 +483,10 @@ window.onpopstate = () => {
         loadPage(lastUrl, lastPage);
     }
 };
+
+// Make permission functions globally accessible
+window.hasPermission = hasPermission;
+window.canModify = canModify;
+window.canAdd = canAdd;
+window.canEdit = canEdit;
+window.canDelete = canDelete;

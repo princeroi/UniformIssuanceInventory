@@ -154,9 +154,41 @@
         cursor: pointer;
     }
     
-    .product-card:hover {
+    .product-card:hover:not(.out-of-stock) {
         transform: translateY(-5px);
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
+    }
+    
+    /* Out of Stock Styling */
+    .product-card.out-of-stock {
+        opacity: 0.6;
+        cursor: not-allowed;
+    }
+    
+    .product-card.out-of-stock .card-body {
+        background-color: #f8f9fa;
+    }
+    
+    .out-of-stock-overlay {
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.7);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 20;
+        border-radius: 0.25rem 0.25rem 0 0;
+    }
+    
+    .out-of-stock-overlay .badge {
+        font-size: 1.2rem;
+        padding: 0.5rem 1rem;
+        background-color: #dc3545;
+        color: white;
+        font-weight: bold;
     }
     
     @keyframes slideIn {

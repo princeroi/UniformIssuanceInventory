@@ -6,6 +6,10 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
     header('Location: pages/login.html');
     exit;
 }
+
+// Get user info from session
+$userName = isset($_SESSION['name']) ? $_SESSION['name'] : 'User';
+$userRole = isset($_SESSION['role_name']) ? $_SESSION['role_name'] : '';
 ?>
 
 <!DOCTYPE html>
@@ -120,6 +124,8 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             padding: 1rem 2rem;
             flex-shrink: 0;
+            position: relative;
+            z-index: 1050;
         }
 
         .navbar .dropdown-toggle {
@@ -129,6 +135,36 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 
         .navbar .dropdown-toggle:hover {
             color: #2563eb;
+        }
+
+        /* Ensure dropdown menu appears above everything */
+        .navbar .dropdown-menu {
+            z-index: 1060 !important;
+        }
+
+        /* User dropdown styling */
+        .navbar .dropdown-toggle {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            transition: background-color 0.2s;
+        }
+
+        .navbar .dropdown-toggle:hover {
+            background-color: rgba(0,0,0,0.05);
+        }
+
+        .user-name-display {
+            font-size: 0.95rem;
+            line-height: 1.2;
+        }
+
+        .user-role-display {
+            font-size: 0.75rem;
+            line-height: 1;
+            margin-top: 2px;
         }
 
         /* Page Content */
@@ -229,29 +265,43 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
                 </button>
                 
                 <div class="ms-auto d-flex align-items-center">
-                    <div class="dropdown">
+                    <!-- <div class="dropdown">
                         <button class="btn btn-link dropdown-toggle" type="button" data-bs-toggle="dropdown">
                             <i class="fas fa-bell"></i>
                             <span class="badge bg-danger position-absolute">3</span>
                         </button>
-                        <ul class="dropdown-menu dropdown-menu-end">
+                         <ul class="dropdown-menu dropdown-menu-end">
                             <li><a class="dropdown-item" href="#">New order received</a></li>
                             <li><a class="dropdown-item" href="#">Low stock alert</a></li>
                             <li><a class="dropdown-item" href="#">Delivery completed</a></li>
-                        </ul>
-                    </div>
+                        </ul> 
+                    </div> -->
                     
                     <div class="dropdown ms-3">
-                        <button class="btn btn-link dropdown-toggle" type="button" data-bs-toggle="dropdown">
-                            <i class="fas fa-user-circle"></i>
-                            <span class="ms-2">Admin User</span>
+                        <button class="btn btn-link dropdown-toggle d-flex align-items-center" type="button" data-bs-toggle="dropdown">
+                            <i class="fas fa-user-circle fa-2x me-2"></i>
+                            <div class="d-flex flex-column align-items-start text-start">
+                                <span class="user-name-display fw-semibold"><?php echo htmlspecialchars($userName); ?></span>
+                                <?php if ($userRole): ?>
+                                    <small class="text-muted user-role-display"><?php echo htmlspecialchars($userRole); ?></small>
+                                <?php endif; ?>
+                            </div>
                         </button>
                         <ul class="dropdown-menu dropdown-menu-end">
+                            <li class="dropdown-header">
+                                <div class="text-center">
+                                    <strong><?php echo htmlspecialchars($userName); ?></strong>
+                                    <?php if ($userRole): ?>
+                                        <br><small class="text-muted"><?php echo htmlspecialchars($userRole); ?></small>
+                                    <?php endif; ?>
+                                </div>
+                            </li>
+                            <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-user me-2"></i>Profile</a></li>
                             <li><a class="dropdown-item" href="#"><i class="fas fa-cog me-2"></i>Settings</a></li>
                             <li><hr class="dropdown-divider"></li>
                             <li>
-                                <a class="dropdown-item" href="controller/logout.php">
+                                <a class="dropdown-item text-danger" href="controller/logout.php">
                                     <i class="fas fa-sign-out-alt me-2"></i>Logout
                                 </a>
                             </li>
@@ -262,7 +312,7 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
         </nav>
 
         <div id="pageContent">
-            <h2>Welcome to UIIS Dashboard</h2>
+            <h2>Welcome to UIS Dashboard</h2>
             <p>Select a menu item to load a page here.</p>
         </div>
     </div>
@@ -270,8 +320,50 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
     <script src="assets/js/notification-ui.js"></script>
+    <script src="assets/js/available_pages.js"></script>
     <script src="assets/js/main.js"></script>
 
+    <script>
+    // Sync PHP session data with sessionStorage (fallback if not already set)
+    document.addEventListener('DOMContentLoaded', function() {
+        // Sync from PHP to sessionStorage if needed
+        if (!sessionStorage.getItem('userName')) {
+            sessionStorage.setItem('userName', '<?php echo addslashes($userName); ?>');
+        }
+        if (!sessionStorage.getItem('userRole')) {
+            sessionStorage.setItem('userRole', '<?php echo addslashes($userRole); ?>');
+        }
+        
+        // Update display from sessionStorage (for consistency)
+        updateUserDisplayFromSession();
+    });
+
+    function updateUserDisplayFromSession() {
+        const userName = sessionStorage.getItem('userName');
+        const userRole = sessionStorage.getItem('userRole');
+        
+        // Update user name display
+        const userNameDisplay = document.querySelector('.user-name-display');
+        if (userNameDisplay && userName) {
+            userNameDisplay.textContent = userName;
+        }
+        
+        // Update user role display
+        const userRoleDisplay = document.querySelector('.user-role-display');
+        if (userRoleDisplay && userRole) {
+            userRoleDisplay.textContent = userRole;
+        } else if (!userRoleDisplay && userRole) {
+            // Create role display if it doesn't exist
+            const userDropdown = document.querySelector('.navbar .dropdown-toggle .d-flex.flex-column');
+            if (userDropdown) {
+                const roleElement = document.createElement('small');
+                roleElement.className = 'text-muted user-role-display';
+                roleElement.textContent = userRole;
+                userDropdown.appendChild(roleElement);
+            }
+        }
+    }
+    </script>
 
 </body>
 </html>

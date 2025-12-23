@@ -99,6 +99,28 @@ try {
             deleteDepartment($pdo);
             break;
             
+        // Role Permissions
+        case 'getRolePermissions':
+            getRolePermissions($pdo);
+            break;
+            
+        case 'saveRolePermissions':
+            saveRolePermissions($pdo);
+            break;
+
+        // User Permissions
+        case 'getUserPermissions':
+            getUserPermissions($pdo);
+            break;
+            
+        case 'saveUserPermissions':
+            saveUserPermissions($pdo);
+            break;
+            
+        case 'resetUserPermissions':
+            resetUserPermissions($pdo);
+            break;
+            
         default:
             sendResponse(false, "Invalid action: " . $action);
             break;
@@ -145,20 +167,45 @@ function addRole($pdo) {
             sendResponse(false, 'A role with this name already exists');
         }
         
-        $stmt = $pdo->prepare("
-            INSERT INTO roles (role_name, description, created_at) 
-            VALUES (?, ?, NOW())
-        ");
-        $stmt->execute([$roleName, $description]);
+        // Start transaction
+        $pdo->beginTransaction();
         
-        $newId = $pdo->lastInsertId();
-        
-        // Get the newly created role
-        $stmt = $pdo->prepare("SELECT * FROM roles WHERE id = ?");
-        $stmt->execute([$newId]);
-        $newRole = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        sendResponse(true, 'Role added successfully', $newRole);
+        try {
+            // Insert role
+            $stmt = $pdo->prepare("
+                INSERT INTO roles (role_name, description, created_at) 
+                VALUES (?, ?, NOW())
+            ");
+            $stmt->execute([$roleName, $description]);
+            
+            $newId = $pdo->lastInsertId();
+            
+            // Create default permissions for all pages
+            $pages = ['dashboard', 'users', 'pos', 'inventory', 'issuance', 'deliveries', 'reports', 'history', 'settings'];
+            
+            $stmt = $pdo->prepare("
+                INSERT INTO role_permissions 
+                (role_id, page_name, can_view, can_add, can_edit, can_delete, created_at) 
+                VALUES (?, ?, 0, 0, 0, 0, NOW())
+            ");
+            
+            foreach ($pages as $page) {
+                $stmt->execute([$newId, $page]);
+            }
+            
+            $pdo->commit();
+            
+            // Get the newly created role
+            $stmt = $pdo->prepare("SELECT * FROM roles WHERE id = ?");
+            $stmt->execute([$newId]);
+            $newRole = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            sendResponse(true, 'Role added successfully', $newRole);
+            
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
         
     } catch (PDOException $e) {
         sendResponse(false, 'Failed to add role: ' . $e->getMessage());
@@ -245,10 +292,26 @@ function deleteRole($pdo) {
             }
         }
         
-        $stmt = $pdo->prepare("DELETE FROM roles WHERE id = ?");
-        $stmt->execute([$id]);
+        // Start transaction
+        $pdo->beginTransaction();
         
-        sendResponse(true, 'Role "' . $role['role_name'] . '" deleted successfully');
+        try {
+            // Delete role permissions first
+            $stmt = $pdo->prepare("DELETE FROM role_permissions WHERE role_id = ?");
+            $stmt->execute([$id]);
+            
+            // Delete role
+            $stmt = $pdo->prepare("DELETE FROM roles WHERE id = ?");
+            $stmt->execute([$id]);
+            
+            $pdo->commit();
+            
+            sendResponse(true, 'Role "' . $role['role_name'] . '" deleted successfully');
+            
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
         
     } catch (PDOException $e) {
         sendResponse(false, 'Failed to delete role: ' . $e->getMessage());
@@ -389,4 +452,277 @@ function deleteDepartment($pdo) {
         sendResponse(false, 'Failed to delete department: ' . $e->getMessage());
     }
 }
+
+// ==================== ROLE PERMISSIONS FUNCTIONS ====================
+
+function getRolePermissions($pdo) {
+    try {
+        $roleId = $_GET['role_id'] ?? '';
+        
+        if (empty($roleId)) {
+            sendResponse(false, 'Role ID is required');
+        }
+        
+        // Verify role exists
+        $stmt = $pdo->prepare("SELECT id FROM roles WHERE id = ?");
+        $stmt->execute([$roleId]);
+        if (!$stmt->fetch()) {
+            sendResponse(false, 'Role not found');
+        }
+        
+        // Get permissions for this role
+        $stmt = $pdo->prepare("
+            SELECT page_name, can_view, can_add, can_edit, can_delete 
+            FROM role_permissions 
+            WHERE role_id = ?
+            ORDER BY page_name
+        ");
+        $stmt->execute([$roleId]);
+        $permissions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        sendResponse(true, 'Role permissions retrieved successfully', $permissions);
+        
+    } catch (PDOException $e) {
+        sendResponse(false, 'Failed to retrieve role permissions: ' . $e->getMessage());
+    }
+}
+
+function saveRolePermissions($pdo) {
+    try {
+        $roleId = $_POST['role_id'] ?? '';
+        $permissionsJson = $_POST['permissions'] ?? '';
+        
+        if (empty($roleId)) {
+            sendResponse(false, 'Role ID is required');
+        }
+        
+        if (empty($permissionsJson)) {
+            sendResponse(false, 'Permissions data is required');
+        }
+        
+        $permissions = json_decode($permissionsJson, true);
+        
+        if (!is_array($permissions)) {
+            sendResponse(false, 'Invalid permissions format');
+        }
+        
+        // Verify role exists
+        $stmt = $pdo->prepare("SELECT id FROM roles WHERE id = ?");
+        $stmt->execute([$roleId]);
+        if (!$stmt->fetch()) {
+            sendResponse(false, 'Role not found');
+        }
+        
+        // Start transaction
+        $pdo->beginTransaction();
+        
+        try {
+            // Delete existing permissions for this role
+            $stmt = $pdo->prepare("DELETE FROM role_permissions WHERE role_id = ?");
+            $stmt->execute([$roleId]);
+            
+            // Insert new permissions
+            $stmt = $pdo->prepare("
+                INSERT INTO role_permissions 
+                (role_id, page_name, can_view, can_add, can_edit, can_delete, created_at) 
+                VALUES (?, ?, ?, ?, ?, ?, NOW())
+            ");
+            
+            foreach ($permissions as $page => $perms) {
+                $stmt->execute([
+                    $roleId,
+                    $page,
+                    $perms['can_view'] ?? 0,
+                    $perms['can_add'] ?? 0,
+                    $perms['can_edit'] ?? 0,
+                    $perms['can_delete'] ?? 0
+                ]);
+            }
+            
+            $pdo->commit();
+            sendResponse(true, 'Role permissions saved successfully');
+            
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+        
+    } catch (PDOException $e) {
+        sendResponse(false, 'Failed to save role permissions: ' . $e->getMessage());
+    }
+}
+
+// ==================== USER PERMISSIONS FUNCTIONS ====================
+
+function getUserPermissions($pdo) {
+    try {
+        $userId = $_GET['user_id'] ?? '';
+        
+        if (empty($userId)) {
+            sendResponse(false, 'User ID is required');
+        }
+        
+        // Get user's role
+        $stmt = $pdo->prepare("SELECT role_id FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        $user = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$user) {
+            sendResponse(false, 'User not found');
+        }
+        
+        // Get role default permissions
+        $stmt = $pdo->prepare("
+            SELECT page_name, can_view, can_add, can_edit, can_delete 
+            FROM role_permissions 
+            WHERE role_id = ?
+            ORDER BY page_name
+        ");
+        $stmt->execute([$user['role_id']]);
+        $rolePermissions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Get user custom permissions
+        $stmt = $pdo->prepare("
+            SELECT page_name, can_view, can_add, can_edit, can_delete, use_custom 
+            FROM user_permissions 
+            WHERE user_id = ?
+            ORDER BY page_name
+        ");
+        $stmt->execute([$userId]);
+        $userCustomPermissions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Create a map for easy lookup
+        $customMap = [];
+        foreach ($userCustomPermissions as $perm) {
+            $customMap[$perm['page_name']] = $perm;
+        }
+        
+        // Combine permissions (custom overrides role if use_custom = 1)
+        $effectivePermissions = [];
+        foreach ($rolePermissions as $rolePerm) {
+            $page = $rolePerm['page_name'];
+            
+            if (isset($customMap[$page]) && $customMap[$page]['use_custom'] == 1) {
+                // Use custom permissions
+                $effectivePermissions[] = [
+                    'page_name' => $page,
+                    'can_view' => $customMap[$page]['can_view'],
+                    'can_add' => $customMap[$page]['can_add'],
+                    'can_edit' => $customMap[$page]['can_edit'],
+                    'can_delete' => $customMap[$page]['can_delete'],
+                    'is_custom' => true,
+                    'role_default' => $rolePerm
+                ];
+            } else {
+                // Use role default
+                $effectivePermissions[] = [
+                    'page_name' => $page,
+                    'can_view' => $rolePerm['can_view'],
+                    'can_add' => $rolePerm['can_add'],
+                    'can_edit' => $rolePerm['can_edit'],
+                    'can_delete' => $rolePerm['can_delete'],
+                    'is_custom' => false,
+                    'role_default' => $rolePerm
+                ];
+            }
+        }
+        
+        sendResponse(true, 'User permissions retrieved successfully', [
+            'permissions' => $effectivePermissions,
+            'role_id' => $user['role_id']
+        ]);
+        
+    } catch (PDOException $e) {
+        sendResponse(false, 'Failed to retrieve user permissions: ' . $e->getMessage());
+    }
+}
+
+function saveUserPermissions($pdo) {
+    try {
+        $userId = $_POST['user_id'] ?? '';
+        $permissionsJson = $_POST['permissions'] ?? '';
+        
+        if (empty($userId)) {
+            sendResponse(false, 'User ID is required');
+        }
+        
+        if (empty($permissionsJson)) {
+            sendResponse(false, 'Permissions data is required');
+        }
+        
+        $permissions = json_decode($permissionsJson, true);
+        
+        if (!is_array($permissions)) {
+            sendResponse(false, 'Invalid permissions format');
+        }
+        
+        // Verify user exists
+        $stmt = $pdo->prepare("SELECT id FROM users WHERE id = ?");
+        $stmt->execute([$userId]);
+        if (!$stmt->fetch()) {
+            sendResponse(false, 'User not found');
+        }
+        
+        // Start transaction
+        $pdo->beginTransaction();
+        
+        try {
+            // Delete existing custom permissions for this user
+            $stmt = $pdo->prepare("DELETE FROM user_permissions WHERE user_id = ?");
+            $stmt->execute([$userId]);
+            
+            // Insert new custom permissions
+            $stmt = $pdo->prepare("
+                INSERT INTO user_permissions 
+                (user_id, page_name, can_view, can_add, can_edit, can_delete, use_custom) 
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ");
+            
+            foreach ($permissions as $page => $perms) {
+                // Only save if use_custom is true
+                if (isset($perms['use_custom']) && $perms['use_custom']) {
+                    $stmt->execute([
+                        $userId,
+                        $page,
+                        $perms['can_view'] ?? 0,
+                        $perms['can_add'] ?? 0,
+                        $perms['can_edit'] ?? 0,
+                        $perms['can_delete'] ?? 0,
+                        1 // use_custom
+                    ]);
+                }
+            }
+            
+            $pdo->commit();
+            sendResponse(true, 'User permissions saved successfully');
+            
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+        
+    } catch (PDOException $e) {
+        sendResponse(false, 'Failed to save user permissions: ' . $e->getMessage());
+    }
+}
+
+function resetUserPermissions($pdo) {
+    try {
+        $userId = $_POST['user_id'] ?? '';
+        
+        if (empty($userId)) {
+            sendResponse(false, 'User ID is required');
+        }
+        
+        // Delete all custom permissions for this user
+        $stmt = $pdo->prepare("DELETE FROM user_permissions WHERE user_id = ?");
+        $stmt->execute([$userId]);
+        
+        sendResponse(true, 'User permissions reset to role defaults');
+        
+    } catch (PDOException $e) {
+        sendResponse(false, 'Failed to reset user permissions: ' . $e->getMessage());
+    }
+}
+
 ?>

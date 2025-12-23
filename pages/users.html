@@ -4,324 +4,406 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>User Management</title>
-    <script>
-        // Protection for individual page files
-        (function() {
-            const isLoggedIn = sessionStorage.getItem('isLoggedIn');
-            
-            if (!isLoggedIn || isLoggedIn !== 'true') {
-                // If accessed directly, redirect to login
-                window.location.href = '../pages/login.html';
-                throw new Error('Not authenticated');
-            }
-        })();
-    </script>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 </head>
 <body>
-    <div class="container-fluid p-4">
-        <div class="page-header mb-4">
-            <div class="d-flex justify-content-between align-items-center">
-                <div>
-                    <h1 class="page-title">User Management</h1>
-                    <p class="page-subtitle">Manage system users and permissions</p>
-                </div>
-                <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#newUserModal">
-                    <i class="fas fa-user-plus"></i> Add User
-                </button>
+
+<div class="container-fluid">
+    <div class="page-header mb-4">
+        <h1 class="page-title">User Management</h1>
+        <p class="page-subtitle text-muted">Manage system users and their access permissions</p>
+    </div>
+
+    <!-- Users Table -->
+    <div class="card shadow-sm">
+        <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+            <h5 class="mb-0"><i class="fas fa-users me-2"></i> System Users</h5>
+            <button class="btn btn-light btn-sm" onclick="showAddUserModal()">
+                <i class="fas fa-plus me-1"></i> Add User
+            </button>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 60px;">ID</th>
+                            <th>Name</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th style="width: 100px;" class="text-center">Status</th>
+                            <th style="width: 120px;" class="text-center">Permissions</th>
+                            <th style="width: 200px;" class="text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="usersTableBody">
+                        <tr>
+                            <td colspan="8" class="text-center py-4">
+                                <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                    <span class="visually-hidden">Loading...</span>
+                                </div>
+                                <p class="mt-2 mb-0">Loading users...</p>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- User Stats -->
-        <div class="row g-4 mb-4">
-            <div class="col-md-3">
-                <div class="card border-start border-primary border-4">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted mb-2">Total Users</h6>
-                                <h3 class="mb-0" id="totalUsers">0</h3>
-                            </div>
-                            <div style="font-size: 2.5rem; color: #667eea;">
-                                <i class="fas fa-users"></i>
-                            </div>
+<!-- Add User Modal -->
+<div class="modal fade" id="addUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-user-plus me-2"></i>Add New User
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="addUserForm">
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">First Name *</label>
+                            <input type="text" class="form-control" id="addFirstName" name="firstName" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Name *</label>
+                            <input type="text" class="form-control" id="addLastName" name="lastName" required>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-start border-success border-4">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted mb-2">Active</h6>
-                                <h3 class="mb-0" id="activeUsers">0</h3>
-                            </div>
-                            <div style="font-size: 2.5rem; color: #10b981;">
-                                <i class="fas fa-user-check"></i>
-                            </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Username *</label>
+                            <input type="text" class="form-control" id="addUsername" name="username" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="addEmail" name="email" required>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-start border-warning border-4">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted mb-2">Inactive</h6>
-                                <h3 class="mb-0" id="inactiveUsers">0</h3>
-                            </div>
-                            <div style="font-size: 2.5rem; color: #f59e0b;">
-                                <i class="fas fa-user-slash"></i>
-                            </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Role *</label>
+                            <select class="form-select" id="addRoleId" name="roleId" required>
+                                <option value="">Select Role</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Department *</label>
+                            <select class="form-select" id="addDepartmentId" name="departmentId" required>
+                                <option value="">Select Department</option>
+                            </select>
                         </div>
                     </div>
-                </div>
-            </div>
-            <div class="col-md-3">
-                <div class="card border-start border-info border-4">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center">
-                            <div>
-                                <h6 class="text-muted mb-2">Online Now</h6>
-                                <h3 class="mb-0" id="onlineUsers">0</h3>
-                            </div>
-                            <div style="font-size: 2.5rem; color: #06b6d4;">
-                                <i class="fas fa-circle"></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Filter Section -->
-        <div class="card mb-4">
-            <div class="card-body">
-                <div class="row g-3">
-                    <div class="col-md-4">
-                        <input type="text" class="form-control" id="searchInput" placeholder="Search by name or username...">
-                    </div>
-                    <div class="col-md-2">
-                        <select class="form-select" id="filterRole">
-                            <option value="">All Roles</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <select class="form-select" id="filterStatus">
-                            <option value="">All Status</option>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Status *</label>
+                        <select class="form-select" id="addStatus" name="status" required>
                             <option value="Active">Active</option>
                             <option value="Inactive">Inactive</option>
                         </select>
                     </div>
-                    <div class="col-md-2">
-                        <select class="form-select" id="filterDept">
-                            <option value="">All Departments</option>
-                        </select>
-                    </div>
-                    <div class="col-md-2">
-                        <button class="btn btn-primary w-100" onclick="loadUsers()">
-                            <i class="fas fa-search"></i> Search
-                        </button>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Note:</strong> Default password will be auto-generated as: Username + FirstName + LastName (no spaces)
                     </div>
                 </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-save me-1"></i>Add User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Edit User Modal -->
+<div class="modal fade" id="editUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title">
+                    <i class="fas fa-edit me-2"></i>Edit User
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editUserForm">
+                <div class="modal-body">
+                    <input type="hidden" id="editUserId" name="id">
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">First Name *</label>
+                            <input type="text" class="form-control" id="editFirstName" name="firstName" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Last Name *</label>
+                            <input type="text" class="form-control" id="editLastName" name="lastName" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Username *</label>
+                            <input type="text" class="form-control" id="editUsername" name="username" required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Email *</label>
+                            <input type="email" class="form-control" id="editEmail" name="email" required>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Role *</label>
+                            <select class="form-select" id="editRoleId" name="roleId" required>
+                                <option value="">Select Role</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Department *</label>
+                            <select class="form-select" id="editDepartmentId" name="departmentId" required>
+                                <option value="">Select Department</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Status *</label>
+                        <select class="form-select" id="editStatus" name="status" required>
+                            <option value="Active">Active</option>
+                            <option value="Inactive">Inactive</option>
+                        </select>
+                    </div>
+                    
+                    <div class="alert alert-info">
+                        <i class="fas fa-info-circle me-2"></i>
+                        <strong>Note:</strong> Password cannot be changed through this form. Contact system administrator for password reset.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="fas fa-save me-1"></i>Update User
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteUserModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header bg-danger text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-exclamation-triangle me-2"></i>Confirm User Deletion
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-danger mb-3">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-circle fa-3x me-3"></i>
+                        <div>
+                            <strong>Warning: This action cannot be undone!</strong>
+                            <p class="mb-0 mt-2">All user data will be permanently deleted from the system.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="user-info-box p-3 bg-light rounded mb-3">
+                    <h6 class="mb-2">User to be deleted:</h6>
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-user-circle fa-3x text-secondary me-3"></i>
+                        <div>
+                            <strong class="d-block" id="deleteUserName" style="font-size: 1.1rem;">-</strong>
+                            <small class="text-muted" id="deleteUserEmail">-</small>
+                        </div>
+                    </div>
+                </div>
+                
+                <p class="mb-0"><strong>Are you absolutely sure you want to proceed with this deletion?</strong></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-danger" id="confirmDeleteBtn" onclick="confirmDeleteUser()">
+                    <i class="fas fa-trash me-1"></i>Delete Permanently
+                </button>
             </div>
         </div>
+    </div>
+</div>
 
-        <!-- Users Table -->
-        <div class="card">
-            <div class="card-body">
+
+<!-- User Permissions Modal - Direct Edit (No Use Custom Toggle) -->
+<div class="modal fade" id="userPermissionsModal" tabindex="-1">
+    <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+        <div class="modal-content">
+            <div class="modal-header bg-gradient-primary text-white">
+                <div>
+                    <h5 class="modal-title mb-1">
+                        <i class="fas fa-user-shield me-2"></i>
+                        <span id="userPermissionsName">User</span> - Custom Access Permissions
+                    </h5>
+                    <small class="text-white-50">
+                        Role Default: <strong id="userPermissionsRole">-</strong>
+                    </small>
+                </div>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info mb-3">
+                    <div class="d-flex align-items-start">
+                        <i class="fas fa-info-circle fa-lg me-3 mt-1"></i>
+                        <div>
+                            <strong>Direct Permission Management:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Simply check or uncheck the permissions you want to grant</li>
+                                <li>All changes are custom and override role defaults</li>
+                                <li>Click "Save Permissions" to apply your changes</li>
+                                <li>Click "Reset to Role Defaults" to revert to the user's role permissions</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="mb-3 d-flex justify-content-between align-items-center">
+                    <div>
+                        <button class="btn btn-outline-secondary btn-sm" onclick="resetUserPermissionsToRole()">
+                            <i class="fas fa-undo me-1"></i> Reset to Role Defaults
+                        </button>
+                    </div>
+                    <div>
+                        <span class="text-muted">
+                            <i class="fas fa-info-circle me-1"></i>
+                            Check the boxes to grant permissions
+                        </span>
+                    </div>
+                </div>
+                
                 <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-dark">
                             <tr>
-                                <th>User</th>
-                                <th>Username</th>
-                                <th>Email</th>
-                                <th>Role</th>
-                                <th>Department</th>
-                                <th>Status</th>
-                                <th>Last Login</th>
-                                <th>Actions</th>
+                                <th style="width: 250px;">
+                                    <i class="fas fa-file-alt me-2"></i>Page
+                                </th>
+                                <th class="text-center" style="width: 120px;">
+                                    <i class="fas fa-eye me-1"></i>View
+                                </th>
+                                <th class="text-center" style="width: 120px;">
+                                    <i class="fas fa-plus me-1"></i>Add
+                                </th>
+                                <th class="text-center" style="width: 120px;">
+                                    <i class="fas fa-edit me-1"></i>Edit
+                                </th>
+                                <th class="text-center" style="width: 120px;">
+                                    <i class="fas fa-trash me-1"></i>Delete
+                                </th>
+                                <th style="width: 200px;">
+                                    <i class="fas fa-shield-alt me-1"></i>Role Default
+                                </th>
                             </tr>
                         </thead>
-                        <tbody id="usersTableBody">
+                        <tbody id="userPermissionsTableBody">
                             <tr>
-                                <td colspan="8" class="text-center">Loading...</td>
+                                <td colspan="6" class="text-center py-4">
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                        <span class="visually-hidden">Loading permissions...</span>
+                                    </div>
+                                    <p class="mt-2 mb-0">Loading permissions...</p>
+                                </td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
-
-                <!-- Pagination -->
-                <nav>
-                    <ul class="pagination justify-content-end mb-0" id="pagination"></ul>
-                </nav>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="saveUserCustomPermissions()">
+                    <i class="fas fa-save me-1"></i> Save Permissions
+                </button>
             </div>
         </div>
     </div>
+</div>
 
-    <!-- NEW USER MODAL -->
-    <div class="modal fade" id="newUserModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title"><i class="fas fa-user-plus me-2"></i>Add New User</h5>
-                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="newUserForm">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">First Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="newFirstName" required>
-                                <div class="invalid-feedback">First Name is required</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Last Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="newLastName" required>
-                                <div class="invalid-feedback">Last Name is required</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">User ID <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="newUserId" required>
-                                <div class="invalid-feedback">User ID is required</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Email <span class="text-danger">*</span></label>
-                                <input type="email" class="form-control" id="newEmail" required>
-                                <div class="invalid-feedback">Valid email is required</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Status <span class="text-danger">*</span></label>
-                                <select class="form-select" id="newStatus" required>
-                                    <option value="">Select Status</option>
-                                    <option value="Active">Active</option>
-                                    <option value="Inactive">Inactive</option>
-                                </select>
-                                <div class="invalid-feedback">Status is required</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Role <span class="text-danger">*</span></label>
-                                <select id="newRolesDropdown" class="form-select" required>
-                                    <option value="">Select Role</option>
-                                </select>
-                                <div class="invalid-feedback">Role is required</div>
-                            </div>
-                            <div class="col-md-12">
-                                <label class="form-label">Department <span class="text-danger">*</span></label>
-                                <select id="newDepartmentsDropdown" class="form-select" required>
-                                    <option value="">Select Department</option>
-                                </select>
-                                <div class="invalid-feedback">Department is required</div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-1"></i>Cancel
-                    </button>
-                    <button type="button" class="btn btn-primary" onclick="createUser()">
-                        <i class="fas fa-plus me-1"></i>Create User
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
-
-    <!-- EDIT USER MODAL -->
-    <div class="modal fade" id="editUserModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-dark">
-                    <h5 class="modal-title"><i class="fas fa-user-edit me-2"></i>Edit User</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <form id="editUserForm">
-                        <input type="hidden" id="editUserId">
-                        <div class="row g-3">
-                            <div class="col-md-6">
-                                <label class="form-label">First Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="editFirstName" required>
-                                <div class="invalid-feedback">First Name is required</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Last Name <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="editLastName" required>
-                                <div class="invalid-feedback">Last Name is required</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">User ID <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="editUserIdField" required>
-                                <div class="invalid-feedback">User ID is required</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Email <span class="text-danger">*</span></label>
-                                <input type="email" class="form-control" id="editEmail" required>
-                                <div class="invalid-feedback">Valid email is required</div>
-                            </div>
-                            
-                            <!-- PASSWORD FIELD - VIEW ONLY, NOT EDITABLE -->
-                            <div class="col-md-12">
-                                <label class="form-label">
-                                    Current Password 
-                                    <span class="badge bg-secondary ms-2">View Only</span>
-                                </label>
-                                <div class="input-group">
-                                    <input type="password" class="form-control bg-light" id="editPassword" readonly disabled 
-                                        style="cursor: not-allowed;">
-                                    <button class="btn btn-outline-secondary" type="button" id="togglePasswordBtn" title="Show/Hide Password">
-                                        <i class="fas fa-eye"></i>
-                                    </button>
-                                </div>
-                                <small class="text-muted">
-                                    <i class="fas fa-info-circle me-1"></i>
-                                    Password cannot be edited here. Click the eye icon to view current password.
-                                </small>
-                            </div>
-                            
-                            <div class="col-md-6">
-                                <label class="form-label">Status <span class="text-danger">*</span></label>
-                                <select class="form-select" id="editStatus" required>
-                                    <option value="">Select Status</option>
-                                    <option value="Active">Active</option>
-                                    <option value="Inactive">Inactive</option>
-                                </select>
-                                <div class="invalid-feedback">Status is required</div>
-                            </div>
-                            <div class="col-md-6">
-                                <label class="form-label">Role <span class="text-danger">*</span></label>
-                                <select id="editRolesDropdown" class="form-select" required>
-                                    <option value="">Select Role</option>
-                                </select>
-                                <div class="invalid-feedback">Role is required</div>
-                            </div>
-                            <div class="col-md-12">
-                                <label class="form-label">Department <span class="text-danger">*</span></label>
-                                <select id="editDepartmentsDropdown" class="form-select" required>
-                                    <option value="">Select Department</option>
-                                </select>
-                                <div class="invalid-feedback">Department is required</div>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                        <i class="fas fa-times me-1"></i>Cancel
-                    </button>
-                    <button type="button" class="btn bg-primary text-light" onclick="updateUser()">
-                        <i class="fas fa-save me-1"></i>Save Changes
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<style>
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+    
+    .permission-checkbox-cell input[type="checkbox"] {
+        width: 22px;
+        height: 22px;
+        cursor: pointer;
+        accent-color: #667eea;
+    }
+    
+    .permission-checkbox-cell input[type="checkbox"]:hover {
+        transform: scale(1.1);
+        transition: transform 0.2s;
+    }
+    
+    .badge-permission {
+        font-size: 0.7rem;
+        padding: 3px 8px;
+        margin: 2px;
+    }
+    
+    .permission-page-name {
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .table-hover tbody tr:hover {
+        background-color: #f8f9fa;
+    }
+    
+    .modal-body {
+        max-height: calc(100vh - 250px);
+        overflow-y: auto;
+    }
+    
+    @keyframes slideIn {
+        from {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+        to {
+            transform: translateX(0);
+            opacity: 1;
+        }
+    }
+    
+    @keyframes slideOut {
+        from {
+            transform: translateX(0);
+            opacity: 1;
+        }
+        to {
+            transform: translateX(100%);
+            opacity: 0;
+        }
+    }
+</style>
 </body>
 </html>

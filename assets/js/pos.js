@@ -1,4 +1,4 @@
-// pos.js - Updated with Site Assigned functionality
+// pos.js - Updated with Error Modal UI
 
 // Initialize when page loads
 window.init_pos = function() {
@@ -42,6 +42,7 @@ function loadProducts() {
             if (result.success) {
                 displayProducts(result.data || []);
             } else {
+                showErrorModal('Load Error', result.message || 'Failed to load products');
                 container.innerHTML = `
                     <div class="col-12 text-center text-danger">
                         <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
@@ -52,6 +53,7 @@ function loadProducts() {
         })
         .catch(error => {
             console.error('Fetch error:', error);
+            showErrorModal('Network Error', 'Unable to connect to server. Please check your connection and try again.');
             container.innerHTML = `
                 <div class="col-12 text-center text-danger">
                     <i class="fas fa-exclamation-triangle fa-2x mb-2"></i>
@@ -80,11 +82,13 @@ function displayProducts(products) {
                           product.quantity <= (product.min_stock || 10) ? 'warning' : 'success';
         
         const hasImage = product.image_url && product.image_url !== 'assets/no-image.png';
+        const isOutOfStock = product.quantity === 0;
         
         return `
             <div class="col-md-6 col-lg-4">
-                <div class="card h-100 product-card border-0 shadow-sm">
+                <div class="card h-100 product-card border-0 shadow-sm ${isOutOfStock ? 'out-of-stock' : ''}">
                     <div class="position-relative">
+                        ${isOutOfStock ? '<div class="out-of-stock-overlay"><span class="badge">OUT OF STOCK</span></div>' : ''}
                         <div class="position-absolute top-0 start-0 w-100 d-flex justify-content-between align-items-start p-3" style="z-index: 10;">
                             <span class="badge bg-dark bg-opacity-75 px-3 py-2" style="font-size: 1.1rem; font-weight: 600;">
                                 ${escapeHtml(product.size)}
@@ -115,8 +119,10 @@ function displayProducts(products) {
                                 ${escapeHtml(product.category)}
                             </span>
                         </div>
-                        <button class="btn btn-primary btn-sm w-100 mt-auto" onclick="showAddToCartModal('${product.item_code}', '${escapeHtml(product.item_name)}', ${product.quantity})">
-                            <i class="fas fa-cart-plus me-1"></i> Add to Cart
+                        <button class="btn btn-primary btn-sm w-100 mt-auto" 
+                                onclick="showAddToCartModal('${product.item_code}', '${escapeHtml(product.item_name)}', ${product.quantity})"
+                                ${isOutOfStock ? 'disabled' : ''}>
+                            <i class="fas fa-cart-plus me-1"></i> ${isOutOfStock ? 'Out of Stock' : 'Add to Cart'}
                         </button>
                     </div>
                 </div>
@@ -142,7 +148,10 @@ function setupSearch() {
                         displayProducts(result.data || []);
                     }
                 })
-                .catch(error => console.error('Search error:', error));
+                .catch(error => {
+                    console.error('Search error:', error);
+                    showErrorModal('Search Error', 'Failed to search products. Please try again.');
+                });
         }, 500);
     });
 }
@@ -172,7 +181,10 @@ function setupCategories() {
                         displayProducts(result.data || []);
                     }
                 })
-                .catch(error => console.error('Filter error:', error));
+                .catch(error => {
+                    console.error('Filter error:', error);
+                    showErrorModal('Filter Error', 'Failed to filter products. Please try again.');
+                });
         });
     });
 }
@@ -185,8 +197,66 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
+// Show error modal
+function showErrorModal(title, message, type = 'danger') {
+    const iconMap = {
+        danger: 'fa-exclamation-circle',
+        warning: 'fa-exclamation-triangle',
+        info: 'fa-info-circle'
+    };
+    
+    const colorMap = {
+        danger: 'bg-danger',
+        warning: 'bg-warning',
+        info: 'bg-info'
+    };
+    
+    const modalHtml = `
+        <div class="modal fade" id="errorModal" tabindex="-1" data-bs-backdrop="static">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header ${colorMap[type]} text-white">
+                        <h5 class="modal-title">
+                            <i class="fas ${iconMap[type]} me-2"></i>${escapeHtml(title)}
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="text-center py-3">
+                            <i class="fas ${iconMap[type]} fa-4x text-${type} mb-3"></i>
+                            <p class="mb-0" style="font-size: 1.1rem;">${escapeHtml(message)}</p>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                            <i class="fas fa-times me-1"></i>Close
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    const existingModal = document.getElementById('errorModal');
+    if (existingModal) existingModal.remove();
+    
+    document.body.insertAdjacentHTML('beforeend', modalHtml);
+    const modal = new bootstrap.Modal(document.getElementById('errorModal'));
+    modal.show();
+    
+    document.getElementById('errorModal').addEventListener('hidden.bs.modal', function() {
+        this.remove();
+    });
+}
+
 // Show add to cart modal
 function showAddToCartModal(itemCode, itemName, maxQuantity) {
+    // Check if item is out of stock
+    if (maxQuantity === 0) {
+        showErrorModal('Out of Stock', `${itemName} is currently out of stock. Please select another item.`, 'warning');
+        return;
+    }
+    
     const modalHtml = `
         <div class="modal fade" id="addToCartModal" tabindex="-1">
             <div class="modal-dialog modal-dialog-centered">
@@ -254,7 +324,7 @@ function addToCart(itemCode, itemName, maxQuantity) {
     const quantity = parseInt(quantityInput?.value) || 1;
     
     if (quantity > maxQuantity) {
-        alert(`Cannot add more than ${maxQuantity} items.`);
+        showErrorModal('Insufficient Stock', `Cannot add more than ${maxQuantity} items. Only ${maxQuantity} available in stock.`, 'warning');
         return;
     }
     
@@ -263,7 +333,7 @@ function addToCart(itemCode, itemName, maxQuantity) {
     if (existingIndex !== -1) {
         const newQuantity = cart[existingIndex].quantity + quantity;
         if (newQuantity > maxQuantity) {
-            alert(`Cannot add more items. Maximum available: ${maxQuantity}`);
+            showErrorModal('Stock Limit Exceeded', `Cannot add more items. Maximum available: ${maxQuantity}. You already have ${cart[existingIndex].quantity} in cart.`, 'warning');
             return;
         }
         cart[existingIndex].quantity = newQuantity;
@@ -346,7 +416,7 @@ function updateCartQuantity(index, change) {
     }
     
     if (newQuantity > cart[index].max_quantity) {
-        showToast('Cannot exceed available stock', 'warning');
+        showErrorModal('Stock Limit', `Cannot exceed available stock. Maximum: ${cart[index].max_quantity}`, 'warning');
         return;
     }
     
@@ -378,7 +448,7 @@ function clearCart() {
 // Show confirmation modal
 function showConfirmationModal() {
     if (cart.length === 0) {
-        showToast('Cart is empty', 'warning');
+        showErrorModal('Empty Cart', 'Your cart is empty. Please add items before completing transaction.', 'warning');
         return;
     }
     
@@ -387,22 +457,14 @@ function showConfirmationModal() {
     const siteAssigned = siteAssignedEl?.value || '';
     const issuanceType = document.getElementById('issuanceType')?.value;
     
-    // Debug log
-    console.log('Validation check:', {
-        employeeName: employeeName,
-        siteAssigned: siteAssigned,
-        siteAssignedElement: siteAssignedEl,
-        issuanceType: issuanceType
-    });
-    
     if (!employeeName) {
-        showToast('Please enter employee name', 'warning');
+        showErrorModal('Missing Information', 'Please enter employee name before completing transaction.', 'warning');
         document.getElementById('employeeName')?.focus();
         return;
     }
     
     if (!siteAssigned || siteAssigned === '') {
-        showToast('Please select site assigned', 'warning');
+        showErrorModal('Missing Information', 'Please select site assigned before completing transaction.', 'warning');
         if (siteAssignedEl) siteAssignedEl.focus();
         return;
     }
@@ -486,9 +548,8 @@ function completeTransaction() {
     const siteAssigned = siteAssignedEl?.value || '';
     const issuanceType = document.getElementById('issuanceType')?.value;
     
-    // Validate again before sending
     if (!siteAssigned || siteAssigned === '') {
-        showToast('Please select site assigned', 'warning');
+        showErrorModal('Missing Information', 'Please select site assigned', 'warning');
         if (siteAssignedEl) siteAssignedEl.focus();
         return;
     }
@@ -524,13 +585,13 @@ function completeTransaction() {
             
             loadProducts();
         } else {
-            showToast(result.message || 'Transaction failed', 'danger');
+            showErrorModal('Transaction Failed', result.message || 'Unable to complete transaction. Please try again.', 'danger');
         }
     })
     .catch(error => {
         hideLoadingModal();
         console.error('Transaction error:', error);
-        showToast('Transaction failed. Please try again.', 'danger');
+        showErrorModal('Connection Error', 'Unable to complete transaction. Please check your connection and try again.', 'danger');
     });
 }
 
@@ -587,15 +648,11 @@ function showReceiptModal(result, employeeName, siteAssigned, issuanceType) {
                     </div>
                     <div class="modal-body p-2 d-flex justify-content-center align-items-center" style="height:100%; overflow:auto;">
                         <div id="receiptPrint" class="receipt-container" style="width:100%; height:100%; padding:0.2in; box-sizing:border-box;">
-
-                            <!-- Logo + Address Centered -->
                             <div class="text-center mb-3">
                                 <img src="assets/images/SSILOGO.png" alt="Logo" style="max-height:50px; object-fit:contain; display:block; margin:0 auto;">
                                 <div style="margin-top:5px; font-weight:bold;">RL Bldg. Francisco Vilage, Brgy. Pulong Sta. Cruz, Sta. Rosa, Laguna</div>
                                 <div>(049) 543-9544</div>
                             </div>
-
-                            <!-- Employee Details (no borders) -->
                             <table class="table table-borderless mb-3" style="width:100%;">
                                 <tr>
                                     <td><strong>Transaction ID:</strong> ${result.transaction_id}</td>
@@ -609,8 +666,6 @@ function showReceiptModal(result, employeeName, siteAssigned, issuanceType) {
                                     <td colspan="2"><strong>Status:</strong> ${escapeHtml(issuanceType)}</td>
                                 </tr>
                             </table>
-
-                            <!-- Items Table (with borders) -->
                             <table class="table table-bordered" style="width:100%; border-collapse:collapse;">
                                 <thead>
                                     <tr>
@@ -624,13 +679,9 @@ function showReceiptModal(result, employeeName, siteAssigned, issuanceType) {
                                     ${Array(10 - cart.length).fill('<tr><td>&nbsp;</td><td></td><td></td></tr>').join('')}
                                 </tbody>
                             </table>
-                            <!-- Add space above footer -->
                             <div style="height:30px;"></div>
-
-                            <!-- Footer -->
                             <table class="table table-borderless" style="width:100%; margin-top:10px;">
                                 <tr>
-                                    <!-- Signature -->
                                     <td style="width:50%; vertical-align:bottom;">
                                         <div style="display:flex; flex-direction:column; align-items:center;">
                                             <div style="margin-bottom:4px; font-weight:bold;">${escapeHtml(employeeName)}</div>
@@ -638,10 +689,9 @@ function showReceiptModal(result, employeeName, siteAssigned, issuanceType) {
                                             <div style="margin-top:2px; font-size:11px;">Signature over printed name</div>
                                         </div>
                                     </td>
-                                    <!-- Date -->
                                     <td style="width:50%; vertical-align:bottom;">
                                         <div style="display:flex; flex-direction:column; align-items:center;">
-                                            <div style="margin-bottom:24px;">&nbsp;</div> <!-- Adjust space to align with signature -->
+                                            <div style="margin-bottom:24px;">&nbsp;</div>
                                             <div style="border-top:1px solid #000; width:80%;"></div>
                                             <div style="margin-top:2px; font-size:11px;">Date Received</div>
                                         </div>
@@ -675,7 +725,7 @@ function showReceiptModal(result, employeeName, siteAssigned, issuanceType) {
     });
 }
 
-// Preview receipt (same format as modal)
+// Preview receipt
 function previewReceipt() {
     const receipt = document.getElementById('receiptPrint');
     if (!receipt) return;
@@ -687,17 +737,13 @@ function previewReceipt() {
             <title>Receipt Preview</title>
             <style>
                 body {
-                    width: 210mm; /* A4 width */
-                    min-height: 297mm; /* A4 height */
+                    width: 210mm;
+                    min-height: 297mm;
                     font-family: Arial, sans-serif;
                     font-size: 12px;
                     margin: 0;
-                    padding: 10mm; /* Top padding so receipt is not glued to top */
+                    padding: 10mm;
                     box-sizing: border-box;
-                }
-                .receipt-container {
-                    width: 100%;
-                    /* keep height auto so it only takes as much as content */
                 }
                 table { width: 100%; border-collapse: collapse; }
                 th, td { padding: 4px; }
@@ -716,7 +762,7 @@ function previewReceipt() {
     previewWindow.focus();
 }
 
-// Print receipt on A4 portrait paper
+// Print receipt
 function printReceipt() {
     const receipt = document.getElementById('receiptPrint');
     if (!receipt) return;
@@ -735,21 +781,16 @@ function printReceipt() {
                     .table-borderless td, .table-borderless th { border: none; }
                     .text-center { text-align: center; }
                     .text-end { text-align: right; }
-                    .no-print { display: none; }
                 }
                 @page { size: A4 portrait; margin: 15mm 10mm 10mm 10mm; }
                 body {
-                    width: 210mm;  /* full A4 width */
-                    min-height: 297mm; /* full A4 height */
+                    width: 210mm;
+                    min-height: 297mm;
                     font-family: Arial, sans-serif;
                     font-size: 12px;
                     margin: 0;
-                    padding: 10mm 10mm 0 10mm; /* top padding to start receipt from top */
+                    padding: 10mm;
                     box-sizing: border-box;
-                }
-                .receipt-container {
-                    width: 100%;
-                    /* height auto so it only takes as much as needed */
                 }
             </style>
         </head>
@@ -764,18 +805,17 @@ function printReceipt() {
     printWindow.close();
 }
 
-
-
-
-
 // Simple toast notification
-function showToast(message,type='info'){
-    const colors={success:'#28a745',warning:'#ffc107',info:'#17a2b8',danger:'#dc3545'};
-    const toast=document.createElement('div');
-    toast.style.cssText=`position:fixed;top:20px;right:20px;background:${colors[type]||colors.info};color:white;padding:15px 20px;border-radius:5px;box-shadow:0 4px 6px rgba(0,0,0,0.1);z-index:9999;animation:slideIn 0.3s ease;`;
-    toast.textContent=message;
+function showToast(message, type='info') {
+    const colors = {success:'#28a745', warning:'#ffc107', info:'#17a2b8', danger:'#dc3545'};
+    const toast = document.createElement('div');
+    toast.style.cssText = `position:fixed;top:20px;right:20px;background:${colors[type]||colors.info};color:white;padding:15px 20px;border-radius:5px;box-shadow:0 4px 6px rgba(0,0,0,0.1);z-index:9999;animation:slideIn 0.3s ease;`;
+    toast.textContent = message;
     document.body.appendChild(toast);
-    setTimeout(()=>{ toast.style.animation='slideOut 0.3s ease'; setTimeout(()=>toast.remove(),300); },3000);
+    setTimeout(() => { 
+        toast.style.animation = 'slideOut 0.3s ease'; 
+        setTimeout(() => toast.remove(), 300); 
+    }, 3000);
 }
 
 // Auto-initialize

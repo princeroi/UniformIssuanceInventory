@@ -1,127 +1,4 @@
-// // Enhanced Notification System
-// const NotificationUI = {
-//     showToast(message, type = 'info') {
-//         const toastContainer = this.getToastContainer();
-//         const toast = document.createElement('div');
-//         toast.className = `toast align-items-center text-white bg-${type} border-0`;
-//         toast.setAttribute('role', 'alert');
-//         toast.innerHTML = `
-//             <div class="d-flex">
-//                 <div class="toast-body">
-//                     <i class="fas fa-${this.getIcon(type)} me-2"></i>
-//                     ${message}
-//                 </div>
-//                 <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-//             </div>
-//         `;
-        
-//         toastContainer.appendChild(toast);
-//         const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
-//         bsToast.show();
-        
-//         toast.addEventListener('hidden.bs.toast', () => toast.remove());
-//     },
-    
-//     showConfirm(options) {
-//         return new Promise((resolve) => {
-//             const modal = document.createElement('div');
-//             modal.className = 'modal fade';
-//             modal.innerHTML = `
-//                 <div class="modal-dialog modal-dialog-centered">
-//                     <div class="modal-content">
-//                         <div class="modal-header bg-${options.type || 'warning'} text-white">
-//                             <h5 class="modal-title">
-//                                 <i class="fas fa-${this.getIcon(options.type || 'warning')} me-2"></i>
-//                                 ${options.title || 'Confirm Action'}
-//                             </h5>
-//                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-//                         </div>
-//                         <div class="modal-body">
-//                             <p class="mb-0">${options.message}</p>
-//                             ${options.detail ? `<small class="text-muted">${options.detail}</small>` : ''}
-//                         </div>
-//                         <div class="modal-footer">
-//                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-//                                 <i class="fas fa-times me-1"></i> Cancel
-//                             </button>
-//                             <button type="button" class="btn btn-${options.type || 'warning'}" id="confirmBtn">
-//                                 <i class="fas fa-check me-1"></i> ${options.confirmText || 'Confirm'}
-//                             </button>
-//                         </div>
-//                     </div>
-//                 </div>
-//             `;
-            
-//             document.body.appendChild(modal);
-//             const bsModal = new bootstrap.Modal(modal);
-//             bsModal.show();
-            
-//             modal.querySelector('#confirmBtn').addEventListener('click', () => {
-//                 bsModal.hide();
-//                 resolve(true);
-//             });
-            
-//             modal.addEventListener('hidden.bs.modal', () => {
-//                 modal.remove();
-//                 resolve(false);
-//             });
-//         });
-//     },
-    
-//     showError(message, details = null) {
-//         const modal = document.createElement('div');
-//         modal.className = 'modal fade';
-//         modal.innerHTML = `
-//             <div class="modal-dialog modal-dialog-centered">
-//                 <div class="modal-content">
-//                     <div class="modal-header bg-danger text-white">
-//                         <h5 class="modal-title">
-//                             <i class="fas fa-exclamation-circle me-2"></i>
-//                             Error
-//                         </h5>
-//                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-//                     </div>
-//                     <div class="modal-body">
-//                         <p class="mb-0">${message}</p>
-//                         ${details ? `<small class="text-muted d-block mt-2">${details}</small>` : ''}
-//                     </div>
-//                     <div class="modal-footer">
-//                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-//                     </div>
-//                 </div>
-//             </div>
-//         `;
-        
-//         document.body.appendChild(modal);
-//         const bsModal = new bootstrap.Modal(modal);
-//         bsModal.show();
-        
-//         modal.addEventListener('hidden.bs.modal', () => modal.remove());
-//     },
-    
-//     getToastContainer() {
-//         let container = document.getElementById('toastContainer');
-//         if (!container) {
-//             container = document.createElement('div');
-//             container.id = 'toastContainer';
-//             container.className = 'toast-container position-fixed top-0 end-0 p-3';
-//             container.style.zIndex = '9999';
-//             document.body.appendChild(container);
-//         }
-//         return container;
-//     },
-    
-//     getIcon(type) {
-//         const icons = {
-//             success: 'check-circle',
-//             danger: 'exclamation-circle',
-//             warning: 'exclamation-triangle',
-//             info: 'info-circle',
-//             primary: 'info-circle'
-//         };
-//         return icons[type] || 'info-circle';
-//     }
-// };
+// assets/js/deliveries.js - Complete with Delete Confirmation Modal
 
 window.init_deliveries = function() {
     loadDeliveries();
@@ -160,22 +37,30 @@ async function loadDeliveries(status = 'all') {
     </td></tr>`;
 
     try {
-        const response = await fetch(`controller/deliveries.php?action=getDeliveries&status=${status}`);
+        const response = await fetch(`controller/deliveries.php?action=getDeliveries`);
         const result = await response.json();
 
         if (result.success) {
             const deliveries = result.data || [];
+            
+            let filteredDeliveries = deliveries;
+            if (status === 'Pending') {
+                filteredDeliveries = deliveries.filter(d => d.quantity_pending > 0);
+            } else if (status === 'Delivered') {
+                filteredDeliveries = deliveries.filter(d => d.quantity_pending === 0 && d.quantity_delivered > 0);
+            }
+            
             updateDeliveryStats(deliveries);
 
-            if (deliveries.length === 0) {
+            if (filteredDeliveries.length === 0) {
                 tbody.innerHTML = `<tr><td colspan="12" class="text-center text-muted">
                     <i class="fas fa-truck fa-2x mb-2 d-block"></i>
-                    No deliveries found.
+                    No deliveries found for the selected filter.
                 </td></tr>`;
                 return;
             }
 
-            tbody.innerHTML = deliveries.map(delivery => {
+            tbody.innerHTML = filteredDeliveries.map(delivery => {
                 let statusClass, statusText;
                 if (delivery.delivery_status === 'Delivered') {
                     statusClass = 'success';
@@ -256,7 +141,7 @@ async function loadDeliveries(status = 'all') {
             <i class="fas fa-exclamation-triangle me-2"></i>
             Error loading deliveries. Please try again.
         </td></tr>`;
-        NotificationUI.showError('Failed to load deliveries', error.message);
+        showToast('Failed to load deliveries: ' + error.message, 'danger');
     }
 }
 
@@ -325,7 +210,7 @@ async function processPartialDelivery(id) {
     const notes = notesInput.value.trim();
     
     if (!quantity || quantity <= 0) {
-        NotificationUI.showError('Invalid quantity', 'Please enter a valid quantity to deliver.');
+        showToast('Please enter a valid quantity to deliver.', 'danger');
         return;
     }
 
@@ -345,18 +230,18 @@ async function processPartialDelivery(id) {
         
         if (result.success) {
             const statusText = result.data.status === 'Delivered' ? 'fully delivered' : 'partially delivered';
-            NotificationUI.showToast(`Delivery ${statusText}! Inventory updated.`, 'success');
+            showToast(`Delivery ${statusText}! Inventory updated.`, 'success');
             
             const modal = bootstrap.Modal.getInstance(document.getElementById('partialDeliveryModal'));
             modal.hide();
             
             loadDeliveries();
         } else {
-            NotificationUI.showError('Failed to process delivery', result.message);
+            showToast('Failed to process delivery: ' + result.message, 'danger');
         }
     } catch (err) {
         console.error(err);
-        NotificationUI.showError('An error occurred', 'Please check your connection and try again.');
+        showToast('An error occurred. Please check your connection and try again.', 'danger');
     }
 }
 
@@ -421,7 +306,7 @@ async function viewDeliveryHistory(deliveryId) {
         }
     } catch (err) {
         console.error(err);
-        NotificationUI.showError('Failed to load delivery history', err.message);
+        showToast('Failed to load delivery history: ' + err.message, 'danger');
     }
 }
 
@@ -446,8 +331,8 @@ async function loadItemsForDropdown() {
 
 function updateDeliveryStats(deliveries) {
     const totalDeliveries = deliveries.length;
-    const pendingDeliveries = deliveries.filter(d => d.delivery_status === 'Pending' || d.delivery_status === 'Partial').length;
-    const deliveredCount = deliveries.filter(d => d.delivery_status === 'Delivered').length;
+    const pendingDeliveries = deliveries.filter(d => d.quantity_pending > 0).length;
+    const deliveredCount = deliveries.filter(d => d.quantity_pending === 0 && d.quantity_delivered > 0).length;
     
     const totalEl = document.getElementById('totalDeliveries');
     const pendingEl = document.getElementById('pendingDeliveries');
@@ -468,7 +353,7 @@ async function createDelivery() {
     const notes = document.getElementById('delivery_notes').value.trim();
 
     if (!itemCode || !quantity || !orderDate || !supplier || !receivedBy) {
-        NotificationUI.showError('Please fill in all required fields', 'Item, quantity, order date, supplier, and received by are required.');
+        showToast('Please fill in all required fields.', 'warning');
         return;
     }
 
@@ -491,7 +376,7 @@ async function createDelivery() {
         const result = await response.json();
 
         if (result.success) {
-            NotificationUI.showToast(`Delivery "${result.data.transaction_number}" created successfully!`, 'success');
+            showToast(`Delivery "${result.data.transaction_number}" created successfully!`, 'success');
 
             const modal = bootstrap.Modal.getInstance(document.getElementById('newDeliveryModal'));
             modal.hide();
@@ -500,11 +385,11 @@ async function createDelivery() {
             setDefaultOrderDate();
             loadDeliveries();
         } else {
-            NotificationUI.showError('Failed to create delivery', result.message);
+            showToast('Failed to create delivery: ' + result.message, 'danger');
         }
     } catch (err) {
         console.error(err);
-        NotificationUI.showError('An error occurred while creating the delivery', 'Please check your connection and try again.');
+        showToast('An error occurred while creating the delivery.', 'danger');
     }
 }
 
@@ -572,7 +457,7 @@ async function printDelivery(id) {
                             <div class="info-value">${escapeHtml(delivery.supplier)}</div>
                         </div>
                         <div class="info-row">
-                            <div class="info-label">Received By:</div>
+                            <div class="info-label">Ordered By:</div>
                             <div class="info-value">${escapeHtml(delivery.received_by)}</div>
                         </div>
                     </div>
@@ -613,7 +498,7 @@ async function printDelivery(id) {
                         <div class="signature-box">
                             <div class="signature-line">
                                 ${escapeHtml(delivery.received_by)}<br>
-                                <small>Received By</small>
+                                <small>Ordered By</small>
                             </div>
                         </div>
                         <div class="signature-box">
@@ -632,51 +517,110 @@ async function printDelivery(id) {
                 printWindow.print();
             };
         } else {
-            NotificationUI.showError('Failed to load delivery details', result.message);
+            showToast('Failed to load delivery details: ' + result.message, 'danger');
         }
     } catch (err) {
         console.error(err);
-        NotificationUI.showError('Error loading delivery details', 'Please check your connection and try again.');
+        showToast('Error loading delivery details.', 'danger');
     }
 }
 
+// DELETE DELIVERY WITH PROFESSIONAL CONFIRMATION MODAL
 async function deleteDelivery(id, transactionNumber) {
-    const confirmed = await NotificationUI.showConfirm({
-        title: 'Delete Delivery',
-        message: `Are you sure you want to delete delivery "${transactionNumber}"?`,
-        detail: 'This action cannot be undone. Only deliveries with no delivered items can be deleted.',
-        type: 'danger',
-        confirmText: 'Delete'
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'deleteDeliveryModal';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-danger">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Confirm Deletion
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-4">
+                        <i class="fas fa-trash-alt fa-4x text-danger mb-3"></i>
+                        <h5 class="mb-3">Delete Delivery Record?</h5>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <div class="d-flex align-items-start">
+                            <i class="fas fa-info-circle fa-lg me-3 mt-1"></i>
+                            <div>
+                                <strong>Transaction:</strong> ${escapeHtml(transactionNumber)}<br>
+                                <small class="text-muted">This action cannot be undone. The delivery record will be permanently removed from the system.</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="alert alert-danger mb-0">
+                        <strong><i class="fas fa-exclamation-circle me-2"></i>Warning:</strong>
+                        <ul class="mb-0 mt-2">
+                            <li>This delivery record will be permanently deleted</li>
+                            <li>All associated history will be removed</li>
+                            <li>This action cannot be reversed</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn">
+                        <i class="fas fa-trash me-1"></i> Yes, Delete Permanently
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    // Handle confirmation
+    document.getElementById('confirmDeleteBtn').addEventListener('click', async function() {
+        this.disabled = true;
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Deleting...';
+        
+        const formData = new FormData();
+        formData.append('action', 'deleteDelivery');
+        formData.append('id', id);
+
+        try {
+            const response = await fetch('controller/deliveries.php', {
+                method: 'POST',
+                body: formData
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                showToast('Delivery deleted successfully!', 'success');
+                bsModal.hide();
+                loadDeliveries();
+            } else {
+                showToast('Failed to delete delivery: ' + result.message, 'danger');
+                this.disabled = false;
+                this.innerHTML = '<i class="fas fa-trash me-1"></i> Yes, Delete Permanently';
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('An error occurred while deleting the delivery.', 'danger');
+            this.disabled = false;
+            this.innerHTML = '<i class="fas fa-trash me-1"></i> Yes, Delete Permanently';
+        }
     });
     
-    if (!confirmed) return;
-
-    const formData = new FormData();
-    formData.append('action', 'deleteDelivery');
-    formData.append('id', id);
-
-    try {
-        const response = await fetch('controller/deliveries.php', {
-            method: 'POST',
-            body: formData
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-            NotificationUI.showToast('Delivery deleted successfully!', 'success');
-            loadDeliveries();
-        } else {
-            NotificationUI.showError('Failed to delete delivery', result.message);
-        }
-    } catch (err) {
-        console.error(err);
-        NotificationUI.showError('An error occurred while deleting the delivery', 'Please check your connection and try again.');
-    }
+    modal.addEventListener('hidden.bs.modal', () => modal.remove());
 }
 
 function filterDeliveries(status) {
     loadDeliveries(status);
+    
     document.querySelectorAll('[data-filter]').forEach(btn => {
         btn.classList.remove('active');
     });
@@ -702,4 +646,50 @@ function escapeHtml(text) {
     if (!text) return '';
     const map = { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' };
     return String(text).replace(/[&<>"']/g, m => map[m]);
+}
+
+function showToast(message, type = 'info') {
+    const colors = { 
+        success: '#28a745', 
+        warning: '#ffc107', 
+        info: '#17a2b8', 
+        danger: '#dc3545' 
+    };
+    
+    const icons = {
+        success: 'fa-check-circle',
+        warning: 'fa-exclamation-triangle',
+        info: 'fa-info-circle',
+        danger: 'fa-times-circle'
+    };
+    
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: ${colors[type] || colors.info};
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        z-index: 9999;
+        animation: slideIn 0.3s ease;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        max-width: 400px;
+    `;
+    
+    toast.innerHTML = `
+        <i class="fas ${icons[type]} fa-lg"></i>
+        <span>${message}</span>
+    `;
+    
+    document.body.appendChild(toast);
+    
+    setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease';
+        setTimeout(() => toast.remove(), 300);
+    }, 3000);
 }

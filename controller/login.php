@@ -2,7 +2,6 @@
 // controller/login.php
 session_start();
 
-// Report errors as exceptions instead of HTML
 ini_set('display_errors', 0);
 ini_set('display_startup_errors', 0);
 error_reporting(E_ALL);
@@ -10,9 +9,7 @@ error_reporting(E_ALL);
 header('Content-Type: application/json');
 
 try {
-    // ---------------------------
     // Create PDO connection
-    // ---------------------------
     $host = 'localhost';
     $db   = 'uniformissuanceinventory';
     $user = 'root';
@@ -28,9 +25,7 @@ try {
 
     $pdo = new PDO($dsn, $user, $pass, $options);
 
-    // ---------------------------
     // Get JSON input
-    // ---------------------------
     $data = json_decode(file_get_contents("php://input"), true);
     $user_id  = $data['user_id'] ?? '';
     $password = $data['password'] ?? '';
@@ -40,11 +35,10 @@ try {
         exit;
     }
 
-    // ---------------------------
-    // Check user credentials WITH ROLE, STATUS AND DEPARTMENT
-    // ---------------------------
+    // Check user credentials
     $stmt = $pdo->prepare("
         SELECT 
+            u.id,
             u.user_id, 
             u.password, 
             u.first_name, 
@@ -53,7 +47,6 @@ try {
             u.department_id,
             u.status,
             r.role_name,
-            r.id as role_table_id,
             d.department_name
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.id
@@ -64,19 +57,16 @@ try {
     $stmt->execute(['user_id' => $user_id]);
     $user = $stmt->fetch();
 
-    // Check if user exists
     if (!$user) {
         echo json_encode(['success' => false, 'message' => 'Invalid User ID or Password']);
         exit;
     }
 
-    // Check if password is correct
     if (!password_verify($password, $user['password'])) {
         echo json_encode(['success' => false, 'message' => 'Invalid User ID or Password']);
         exit;
     }
 
-    // Check if user account is Active
     if ($user['status'] !== 'Active') {
         echo json_encode([
             'success' => false, 
@@ -86,17 +76,15 @@ try {
         exit;
     }
 
-    // Check if role exists
     if (!$user['role_name']) {
         echo json_encode(['success' => false, 'message' => 'User role not found. Contact administrator.']);
         exit;
     }
 
-    // ---------------------------
-    // LOGIN SUCCESS - Set session variables with ROLE AND DEPARTMENT
-    // ---------------------------
+    // Set session variables
     $_SESSION['logged_in'] = true;
     $_SESSION['user_id'] = $user['user_id'];
+    $_SESSION['db_user_id'] = $user['id']; // Database ID
     $_SESSION['name'] = $user['first_name'] . ' ' . $user['last_name'];
     $_SESSION['first_name'] = $user['first_name'];
     $_SESSION['last_name'] = $user['last_name'];
@@ -106,116 +94,74 @@ try {
     $_SESSION['department_name'] = $user['department_name'];
     $_SESSION['status'] = $user['status'];
 
-    // Update last login timestamp
-    $updateStmt = $pdo->prepare("UPDATE users SET last_login = NOW() WHERE user_id = ?");
-    $updateStmt->execute([$user['user_id']]);
+    // Update last login
+    $updateStmt = $pdo->prepare("UPDATE users SET last_login = NOW() WHERE id = ?");
+    $updateStmt->execute([$user['id']]);
 
-    // Define role permissions with DEPARTMENT-BASED ACCESS CONTROL
-    $permissions = [];
-    $roleName = strtolower($user['role_name']);
-    $departmentName = strtolower($user['department_name'] ?? '');
-    
-    // Determine if user can access Users and Settings
-    $canAccessUsers = false;
-    $canAccessSettings = false;
-    
-    if ($roleName === 'administrator') {
-        // Administrators can access everything
-        $canAccessUsers = true;
-        $canAccessSettings = true;
-    } elseif ($roleName === 'manager') {
-        // Managers of ALL departments can access Users
-        $canAccessUsers = true;
-        $canAccessSettings = false;
-        
-        // Only IT Department managers can access Settings
-        if ($departmentName === 'it' || $departmentName === 'it department' || $departmentName === 'information technology') {
-            $canAccessSettings = true;
+    // ========================================
+    // LOAD PERMISSIONS FROM user_permissions ONLY
+    // role_permissions is ONLY used as default template
+    // ========================================
+    function loadUserPermissions($pdo, $dbUserId) {
+        try {
+            // Get permissions from user_permissions table ONLY
+            $stmt = $pdo->prepare("
+                SELECT 
+                    page_name, 
+                    can_view, 
+                    can_add, 
+                    can_edit, 
+                    can_delete 
+                FROM user_permissions 
+                WHERE user_id = ?
+            ");
+            $stmt->execute([$dbUserId]);
+            $userPermissions = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+            $permissions = [];
+
+            // Build permissions array from user_permissions
+            foreach ($userPermissions as $perm) {
+                $page = $perm['page_name'];
+                $permissions[$page] = [
+                    'view' => (bool)$perm['can_view'],
+                    'add' => (bool)$perm['can_add'],
+                    'edit' => (bool)$perm['can_edit'],
+                    'delete' => (bool)$perm['can_delete']
+                ];
+            }
+
+            return $permissions;
+        } catch (PDOException $e) {
+            error_log('Error loading user permissions: ' . $e->getMessage());
+            return [];
         }
-    } elseif ($departmentName === 'it' || $departmentName === 'it department' || $departmentName === 'information technology') {
-        // IT Department users (non-managers) can access Users and Settings
-        $canAccessUsers = true;
-        $canAccessSettings = true;
-    } elseif ($departmentName === 'hr' || $departmentName === 'human resources') {
-        // HR Department users CANNOT access Users or Settings
-        $canAccessUsers = false;
-        $canAccessSettings = false;
-    }
-    
-    switch($roleName) {
-        case 'administrator':
-            $permissions = [
-                'dashboard' => true,
-                'pos' => true,
-                'issuance' => true,
-                'deliveries' => true,
-                'inventory' => true,
-                'users' => $canAccessUsers,
-                'reports' => true,
-                'history' => true,
-                'settings' => $canAccessSettings
-            ];
-            break;
-            
-        case 'manager':
-            $permissions = [
-                'dashboard' => true,
-                'pos' => true,
-                'issuance' => true,
-                'deliveries' => true,
-                'inventory' => true,
-                'users' => $canAccessUsers,
-                'reports' => true,
-                'history' => true,
-                'settings' => $canAccessSettings
-            ];
-            break;
-            
-        case 'supervisor':
-            // SUPERVISOR: Can issue in POS + view all pages except Users/Settings
-            $permissions = [
-                'dashboard' => true,
-                'pos' => true,              // CAN ISSUE (modify)
-                'issuance' => true,         // Can view (read-only for own data)
-                'deliveries' => true,       // Can view (read-only)
-                'inventory' => true,        // Can view (read-only)
-                'users' => $canAccessUsers,
-                'reports' => true,          // Can view (read-only)
-                'history' => true,          // Can view (read-only)
-                'settings' => $canAccessSettings,
-                'can_modify' => ['pos']     // Only POS can be modified
-            ];
-            break;
-            
-        case 'recruiter':
-            // RECRUITER: Can issue in POS + view their own Issuances
-            $permissions = [
-                'dashboard' => false,
-                'pos' => true,              // CAN ISSUE (modify)
-                'issuance' => true,         // CAN VIEW (own data only)
-                'deliveries' => false,
-                'inventory' => false,
-                'users' => false,           // Recruiters never access Users
-                'reports' => false,
-                'history' => false,
-                'settings' => false         // Recruiters never access Settings
-            ];
-            break;
-            
-        default:
-            $permissions = [
-                'dashboard' => false,
-                'pos' => false,
-                'issuance' => false,
-                'deliveries' => false,
-                'inventory' => false,
-                'users' => $canAccessUsers,
-                'reports' => false,
-                'history' => false,
-                'settings' => $canAccessSettings
-            ];
     }
 
+    // Load permissions from user_permissions table
+    $userPermissions = loadUserPermissions($pdo, $user['id']);
+    $_SESSION['user_permissions'] = $userPermissions;
+
+    // Prepare simplified version for frontend
+    $jsPermissions = [];
+    foreach ($userPermissions as $page => $perms) {
+        // Can view = true/false
+        $jsPermissions[$page] = $perms['view'];
+
+        // Build list of pages user can modify
+        if (!isset($jsPermissions['can_modify'])) {
+            $jsPermissions['can_modify'] = [];
+        }
+
+        if ($perms['add'] || $perms['edit'] || $perms['delete']) {
+            $jsPermissions['can_modify'][] = $page;
+        }
+    }
+
+    // Store detailed permissions for granular access control
+    $_SESSION['user_permissions_detailed'] = $userPermissions;
+
+    // Final JSON response
     echo json_encode([
         'success' => true,
         'user' => [
@@ -226,7 +172,8 @@ try {
             'department_id' => $user['department_id'],
             'department_name' => $user['department_name'],
             'status' => $user['status'],
-            'permissions' => $permissions
+            'permissions' => $jsPermissions,
+            'permissions_detailed' => $userPermissions
         ]
     ]);
 

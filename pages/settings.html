@@ -34,7 +34,7 @@
                                 <th style="width: 200px;">Role Name</th>
                                 <th>Description</th>
                                 <th style="width: 180px;">Created At</th>
-                                <th style="width: 120px;" class="text-center">Actions</th>
+                                <th style="width: 160px;" class="text-center">Actions</th>
                             </tr>
                         </thead>
                         <tbody id="rolesTableBody">
@@ -164,7 +164,7 @@
     </div>
 </div>
 
-<!-- Modal for Add/Edit -->
+<!-- Modal for Add/Edit Role/Department -->
 <div class="modal fade" id="dataModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -181,6 +181,64 @@
                 </button>
                 <button type="button" class="btn btn-primary" onclick="saveSettingsData()">
                     <i class="fas fa-save me-1"></i> Save
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Role Permissions Modal -->
+<div class="modal fade" id="permissionsModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title">
+                    <i class="fas fa-shield-alt me-2"></i> Manage Permissions - <span id="permissionsRoleName"></span>
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    <strong>Tip:</strong> Check "View" to allow access to a page. Unchecking "View" will automatically uncheck all other permissions for that page.
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-bordered table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th style="width: 40%;">Page</th>
+                                <th class="text-center" style="width: 15%;">
+                                    <i class="fas fa-eye me-1"></i> View
+                                </th>
+                                <th class="text-center" style="width: 15%;">
+                                    <i class="fas fa-plus me-1"></i> Add
+                                </th>
+                                <th class="text-center" style="width: 15%;">
+                                    <i class="fas fa-edit me-1"></i> Edit
+                                </th>
+                                <th class="text-center" style="width: 15%;">
+                                    <i class="fas fa-trash me-1"></i> Delete
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody id="permissionsTableBody">
+                            <tr>
+                                <td colspan="5" class="text-center py-3">
+                                    <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                        <span class="visually-hidden">Loading...</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="fas fa-times me-1"></i> Cancel
+                </button>
+                <button type="button" class="btn btn-primary" onclick="savePermissions()">
+                    <i class="fas fa-save me-1"></i> Save Permissions
                 </button>
             </div>
         </div>
@@ -249,7 +307,26 @@
     
     .table tbody tr:hover {
         background-color: #f8f9fa;
+    }
+    
+    /* Permissions table styling */
+    #permissionsModal .table-bordered th,
+    #permissionsModal .table-bordered td {
+        vertical-align: middle;
+    }
+    
+    #permissionsModal input[type="checkbox"] {
+        width: 20px;
+        height: 20px;
         cursor: pointer;
+    }
+    
+    .permission-page-name {
+        font-weight: 500;
+    }
+    
+    .permission-checkbox-cell {
+        text-align: center;
     }
     
     @keyframes slideIn {
@@ -276,6 +353,7 @@
 </style>
 
 <script>
+
     // Initialize Settings when page loads
     document.addEventListener('DOMContentLoaded', function() {
         if (typeof init_settings === 'function') {

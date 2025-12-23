@@ -1,17 +1,5 @@
 // assets/js/settings.js
 
-// Available pages in the system
-const AVAILABLE_PAGES = [
-    { name: 'dashboard', label: 'Dashboard', icon: 'fa-chart-line' },
-    { name: 'users', label: 'User Management', icon: 'fa-users' },
-    { name: 'pos', label: 'Point of Sale', icon: 'fa-shopping-cart' },
-    { name: 'inventory', label: 'Inventory', icon: 'fa-boxes' },
-    { name: 'issuance', label: 'Issuance Records', icon: 'fa-file-alt' },
-    { name: 'deliveries', label: 'Deliveries', icon: 'fa-truck' },
-    { name: 'reports', label: 'Reports', icon: 'fa-chart-bar' },
-    { name: 'history', label: 'History', icon: 'fa-history' },
-    { name: 'settings', label: 'Settings', icon: 'fa-cog' }
-];
 
 // Initialize function called by main.js
 window.init_settings = function() {
@@ -55,7 +43,7 @@ window.init_settings = function() {
     
     window.currentSettingsSection = 'roles';
     window.editingSettingsId = null;
-    window.currentRolePermissions = null;
+    window.currentRoleId = null;
     
     // Load all data initially
     loadSettingsData('roles');
@@ -146,7 +134,7 @@ function renderTableData(section, tbody) {
                 <td><strong>${escapeHtml(item.role_name)}</strong></td>
                 <td title="${desc}">${shortDesc}</td>
                 <td><small class="text-muted">${formatDate(item.created_at)}</small></td>
-                <td class="text-nowrap">
+                <td class="text-center text-nowrap">
                     <button class="btn btn-sm btn-info me-1" onclick="managePermissions(${item.id}, '${escapeHtml(item.role_name)}')" title="Manage Permissions">
                         <i class="fas fa-shield-alt"></i>
                     </button>
@@ -163,7 +151,7 @@ function renderTableData(section, tbody) {
                 <td>${item.id}</td>
                 <td><strong>${escapeHtml(item.department_name)}</strong></td>
                 <td><small class="text-muted">${formatDate(item.created_at)}</small></td>
-                <td class="text-nowrap">
+                <td class="text-center text-nowrap">
                     <button class="btn btn-sm btn-warning me-1" onclick="editSettingsItem('${section}', ${item.id})" title="Edit">
                         <i class="fas fa-edit"></i>
                     </button>
@@ -178,6 +166,8 @@ function renderTableData(section, tbody) {
     });
 }
 
+// ==================== PERMISSIONS MANAGEMENT ====================
+
 async function managePermissions(roleId, roleName) {
     window.currentRoleId = roleId;
     
@@ -190,18 +180,27 @@ async function managePermissions(roleId, roleName) {
     if (!tbody) return;
     
     // Show loading
-    tbody.innerHTML = `<tr><td colspan="5" class="text-center">
+    tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3">
         <div class="spinner-border spinner-border-sm text-primary" role="status">
             <span class="visually-hidden">Loading permissions...</span>
         </div>
+        <p class="mt-2 mb-0">Loading permissions...</p>
     </td></tr>`;
     
     try {
         const basePath = window.settingsBasePath || '';
         const endpoint = `${basePath}/controller/settings.php?action=getRolePermissions&role_id=${roleId}`;
         
+        console.log('Fetching permissions from:', endpoint);
         const response = await fetch(endpoint);
-        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        
+        const responseText = await response.text();
+        console.log('Permissions response:', responseText);
+        const result = JSON.parse(responseText);
         
         let permissions = {};
         
@@ -229,10 +228,11 @@ async function managePermissions(roleId, roleName) {
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td class="permission-page-name">
-                    <i class="fas ${page.icon} me-2"></i>${page.label}
+                    <i class="fas ${page.icon} me-2 text-primary"></i>${page.label}
                 </td>
                 <td class="permission-checkbox-cell">
                     <input type="checkbox" 
+                           class="form-check-input"
                            data-page="${page.name}" 
                            data-perm="view" 
                            ${perm.can_view ? 'checked' : ''}
@@ -240,18 +240,21 @@ async function managePermissions(roleId, roleName) {
                 </td>
                 <td class="permission-checkbox-cell">
                     <input type="checkbox" 
+                           class="form-check-input"
                            data-page="${page.name}" 
                            data-perm="add" 
                            ${perm.can_add ? 'checked' : ''}>
                 </td>
                 <td class="permission-checkbox-cell">
                     <input type="checkbox" 
+                           class="form-check-input"
                            data-page="${page.name}" 
                            data-perm="edit" 
                            ${perm.can_edit ? 'checked' : ''}>
                 </td>
                 <td class="permission-checkbox-cell">
                     <input type="checkbox" 
+                           class="form-check-input"
                            data-page="${page.name}" 
                            data-perm="delete" 
                            ${perm.can_delete ? 'checked' : ''}>
@@ -266,7 +269,8 @@ async function managePermissions(roleId, roleName) {
         
     } catch (error) {
         console.error('Error loading permissions:', error);
-        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger">
+        tbody.innerHTML = `<tr><td colspan="5" class="text-center text-danger py-3">
+            <i class="fas fa-exclamation-triangle fa-2x mb-2 d-block"></i>
             Error loading permissions: ${error.message}
         </td></tr>`;
     }
@@ -325,12 +329,15 @@ async function savePermissions() {
         formData.append('role_id', window.currentRoleId);
         formData.append('permissions', JSON.stringify(permissions));
         
+        console.log('Saving permissions for role:', window.currentRoleId);
         const response = await fetch(endpoint, {
             method: 'POST',
             body: formData
         });
         
-        const result = await response.json();
+        const responseText = await response.text();
+        console.log('Save response:', responseText);
+        const result = JSON.parse(responseText);
         
         if (result.success) {
             showSettingsToast(result.message, 'success');
@@ -346,6 +353,8 @@ async function savePermissions() {
         showSettingsToast('Error saving permissions: ' + error.message, 'danger');
     }
 }
+
+// ==================== ROLE/DEPARTMENT CRUD ====================
 
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
@@ -592,6 +601,8 @@ document.addEventListener('DOMContentLoaded', function() {
         confirmDeleteBtn.addEventListener('click', confirmDelete);
     }
 });
+
+// ==================== UTILITY FUNCTIONS ====================
 
 function escapeHtml(text) {
     if (!text) return '';
