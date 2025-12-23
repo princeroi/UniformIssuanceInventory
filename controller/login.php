@@ -41,7 +41,7 @@ try {
     }
 
     // ---------------------------
-    // Check user credentials WITH ROLE
+    // Check user credentials WITH ROLE, STATUS AND DEPARTMENT
     // ---------------------------
     $stmt = $pdo->prepare("
         SELECT 
@@ -50,18 +50,39 @@ try {
             u.first_name, 
             u.last_name, 
             u.role_id,
+            u.department_id,
+            u.status,
             r.role_name,
-            r.id as role_table_id
+            r.id as role_table_id,
+            d.department_name
         FROM users u
         LEFT JOIN roles r ON u.role_id = r.id
+        LEFT JOIN departments d ON u.department_id = d.id
         WHERE u.user_id = :user_id 
         LIMIT 1
     ");
     $stmt->execute(['user_id' => $user_id]);
     $user = $stmt->fetch();
 
-    if (!$user || !password_verify($password, $user['password'])) {
+    // Check if user exists
+    if (!$user) {
         echo json_encode(['success' => false, 'message' => 'Invalid User ID or Password']);
+        exit;
+    }
+
+    // Check if password is correct
+    if (!password_verify($password, $user['password'])) {
+        echo json_encode(['success' => false, 'message' => 'Invalid User ID or Password']);
+        exit;
+    }
+
+    // Check if user account is Active
+    if ($user['status'] !== 'Active') {
+        echo json_encode([
+            'success' => false, 
+            'message' => 'Account is inactive. Please contact your administrator.',
+            'error_type' => 'inactive_account'
+        ]);
         exit;
     }
 
@@ -72,7 +93,7 @@ try {
     }
 
     // ---------------------------
-    // LOGIN SUCCESS - Set session variables with ROLE
+    // LOGIN SUCCESS - Set session variables with ROLE AND DEPARTMENT
     // ---------------------------
     $_SESSION['logged_in'] = true;
     $_SESSION['user_id'] = $user['user_id'];
@@ -81,11 +102,47 @@ try {
     $_SESSION['last_name'] = $user['last_name'];
     $_SESSION['role_id'] = $user['role_id'];
     $_SESSION['role_name'] = $user['role_name'];
+    $_SESSION['department_id'] = $user['department_id'];
+    $_SESSION['department_name'] = $user['department_name'];
+    $_SESSION['status'] = $user['status'];
 
-    // Define role permissions - UPDATED FOR YOUR REQUIREMENTS
+    // Update last login timestamp
+    $updateStmt = $pdo->prepare("UPDATE users SET last_login = NOW() WHERE user_id = ?");
+    $updateStmt->execute([$user['user_id']]);
+
+    // Define role permissions with DEPARTMENT-BASED ACCESS CONTROL
     $permissions = [];
+    $roleName = strtolower($user['role_name']);
+    $departmentName = strtolower($user['department_name'] ?? '');
     
-    switch(strtolower($user['role_name'])) {
+    // Determine if user can access Users and Settings
+    $canAccessUsers = false;
+    $canAccessSettings = false;
+    
+    if ($roleName === 'administrator') {
+        // Administrators can access everything
+        $canAccessUsers = true;
+        $canAccessSettings = true;
+    } elseif ($roleName === 'manager') {
+        // Managers of ALL departments can access Users
+        $canAccessUsers = true;
+        $canAccessSettings = false;
+        
+        // Only IT Department managers can access Settings
+        if ($departmentName === 'it' || $departmentName === 'it department' || $departmentName === 'information technology') {
+            $canAccessSettings = true;
+        }
+    } elseif ($departmentName === 'it' || $departmentName === 'it department' || $departmentName === 'information technology') {
+        // IT Department users (non-managers) can access Users and Settings
+        $canAccessUsers = true;
+        $canAccessSettings = true;
+    } elseif ($departmentName === 'hr' || $departmentName === 'human resources') {
+        // HR Department users CANNOT access Users or Settings
+        $canAccessUsers = false;
+        $canAccessSettings = false;
+    }
+    
+    switch($roleName) {
         case 'administrator':
             $permissions = [
                 'dashboard' => true,
@@ -93,10 +150,10 @@ try {
                 'issuance' => true,
                 'deliveries' => true,
                 'inventory' => true,
-                'users' => true,
+                'users' => $canAccessUsers,
                 'reports' => true,
                 'history' => true,
-                'settings' => true
+                'settings' => $canAccessSettings
             ];
             break;
             
@@ -107,10 +164,10 @@ try {
                 'issuance' => true,
                 'deliveries' => true,
                 'inventory' => true,
-                'users' => true,
+                'users' => $canAccessUsers,
                 'reports' => true,
                 'history' => true,
-                'settings' => false
+                'settings' => $canAccessSettings
             ];
             break;
             
@@ -122,10 +179,10 @@ try {
                 'issuance' => true,         // Can view (read-only for own data)
                 'deliveries' => true,       // Can view (read-only)
                 'inventory' => true,        // Can view (read-only)
-                'users' => false,
+                'users' => $canAccessUsers,
                 'reports' => true,          // Can view (read-only)
                 'history' => true,          // Can view (read-only)
-                'settings' => false,
+                'settings' => $canAccessSettings,
                 'can_modify' => ['pos']     // Only POS can be modified
             ];
             break;
@@ -138,10 +195,10 @@ try {
                 'issuance' => true,         // CAN VIEW (own data only)
                 'deliveries' => false,
                 'inventory' => false,
-                'users' => false,
+                'users' => false,           // Recruiters never access Users
                 'reports' => false,
                 'history' => false,
-                'settings' => false
+                'settings' => false         // Recruiters never access Settings
             ];
             break;
             
@@ -152,10 +209,10 @@ try {
                 'issuance' => false,
                 'deliveries' => false,
                 'inventory' => false,
-                'users' => false,
+                'users' => $canAccessUsers,
                 'reports' => false,
                 'history' => false,
-                'settings' => false
+                'settings' => $canAccessSettings
             ];
     }
 
@@ -166,6 +223,9 @@ try {
             'name' => $user['first_name'] . ' ' . $user['last_name'],
             'role_id' => $user['role_id'],
             'role_name' => $user['role_name'],
+            'department_id' => $user['department_id'],
+            'department_name' => $user['department_name'],
+            'status' => $user['status'],
             'permissions' => $permissions
         ]
     ]);

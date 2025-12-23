@@ -213,11 +213,11 @@ if (!isset($_SESSION['logged_in']) || $_SESSION['logged_in'] !== true) {
             <a href="pages/history.html" class="menu-item" data-page="history">
                 <i class="fas fa-history"></i>
                 <span>History</span>
-            </a>
+            </a>-->
             <a href="pages/settings.html" class="menu-item" data-page="settings">
                 <i class="fas fa-cog"></i>
                 <span>Settings</span>
-            </a> -->
+            </a> 
         </nav>
     </div>
 

@@ -95,6 +95,10 @@ try {
             updateItem($pdo);
             break;
             
+        case 'checkItemUsage':
+            checkItemUsage($pdo);
+            break;
+            
         case 'deleteItem':
             deleteItem($pdo);
             break;
@@ -112,9 +116,6 @@ try {
 }
 
 
-/**
- * Create new inventory item
- */
 /**
  * Create new inventory item
  */
@@ -406,39 +407,203 @@ function updateItem($pdo) {
 }
 
 /**
- * Delete inventory item
+ * Check if item has issuance history
  */
-function deleteItem($pdo) {
-    $item_code = $_POST['item_code'] ?? '';
+function checkItemUsage($pdo) {
+    $itemCode = $_GET['item_code'] ?? '';
     
-    if (!$item_code) {
+    if (!$itemCode) {
         sendResponse(false, 'Item code is required');
     }
     
     try {
-        // Get item to delete image file
-        $stmt = $pdo->prepare("SELECT image_path FROM items WHERE item_code = ?");
-        $stmt->execute([$item_code]);
+        // Check if item exists in issuance_items
+        $stmt = $pdo->prepare("
+            SELECT 
+                COUNT(DISTINCT transaction_id) as issuance_count,
+                SUM(quantity) as total_items_issued
+            FROM issuance_items 
+            WHERE item_code = ?
+        ");
+        $stmt->execute([$itemCode]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        $hasIssuances = $result['issuance_count'] > 0;
+        
+        sendResponse(true, 'Usage check complete', [
+            'has_issuances' => $hasIssuances,
+            'issuance_count' => (int)$result['issuance_count'],
+            'total_items_issued' => (int)$result['total_items_issued']
+        ]);
+        
+    } catch (PDOException $e) {
+        sendResponse(false, 'Failed to check item usage: ' . $e->getMessage());
+    }
+}
+
+/**
+ * Delete inventory item with cascade option
+ * DELETES FROM: items → issuance_items → issuance_transactions
+ */
+/**
+ * Delete inventory item with cascade option
+ * DELETES FROM: items → issuance_items → issuance_transactions
+ */
+function deleteItem($pdo) {
+    $itemCode = $_POST['item_code'] ?? '';
+    $cascadeDelete = $_POST['cascade_delete'] ?? '0';
+    
+    if (!$itemCode) {
+        sendResponse(false, 'Item code is required');
+    }
+    
+    try {
+        // Start transaction for atomic operation
+        $pdo->beginTransaction();
+        
+        // ═══════════════════════════════════════════════════════════════
+        // STEP 1: CHECK IF ITEM HAS ISSUANCE HISTORY
+        // ═══════════════════════════════════════════════════════════════
+        $checkStmt = $pdo->prepare("
+            SELECT 
+                COUNT(DISTINCT transaction_id) as issuance_count,
+                SUM(quantity) as total_issued
+            FROM issuance_items 
+            WHERE item_code = ?
+        ");
+        $checkStmt->execute([$itemCode]);
+        $usage = $checkStmt->fetch(PDO::FETCH_ASSOC);
+        
+        $hasIssuances = $usage['issuance_count'] > 0;
+        
+        // If item has issuances but cascade is not enabled, block deletion
+        if ($hasIssuances && $cascadeDelete !== '1') {
+            $pdo->rollBack();
+            sendResponse(false, 'CANNOT_DELETE_HAS_ISSUANCES', [
+                'has_issuances' => true,
+                'issuance_count' => (int)$usage['issuance_count'],
+                'total_issued' => (int)$usage['total_issued']
+            ]);
+            return;
+        }
+        
+        // Get item details for image deletion
+        $stmt = $pdo->prepare("SELECT image_path, item_name FROM items WHERE item_code = ?");
+        $stmt->execute([$itemCode]);
         $item = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        if ($item) {
-            // Delete image file
-            deleteImageFile($item['image_path']);
-            
-            // Delete item from database
-            $stmt = $pdo->prepare("DELETE FROM items WHERE item_code = ?");
-            $deleted = $stmt->execute([$item_code]);
-            
-            if ($deleted && $stmt->rowCount() > 0) {
-                sendResponse(true, 'Item deleted successfully');
-            } else {
-                sendResponse(false, 'Failed to delete item');
-            }
-        } else {
+        if (!$item) {
+            $pdo->rollBack();
             sendResponse(false, 'Item not found');
+            return;
         }
+        
+        $deletedIssuanceItems = 0;
+        $deletedTransactions = 0;
+        
+        // ═══════════════════════════════════════════════════════════════
+        // STEP 2: CASCADE DELETE FROM ISSUANCE TABLES (if enabled)
+        // ═══════════════════════════════════════════════════════════════
+        if ($cascadeDelete === '1' && $hasIssuances) {
+            
+            // A. Get all transaction_ids that contain this item
+            $stmt = $pdo->prepare("
+                SELECT DISTINCT transaction_id 
+                FROM issuance_items 
+                WHERE item_code = ?
+            ");
+            $stmt->execute([$itemCode]);
+            $affectedTransactionIds = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+            // B. DELETE FROM issuance_items table
+            $stmt = $pdo->prepare("DELETE FROM issuance_items WHERE item_code = ?");
+            $stmt->execute([$itemCode]);
+            $deletedIssuanceItems = $stmt->rowCount();
+            
+            // C. DELETE FROM issuance_transactions table (remove empty transactions)
+            foreach ($affectedTransactionIds as $transactionId) {
+                // Check if this transaction still has ANY items left
+                $stmt = $pdo->prepare("
+                    SELECT COUNT(*) as remaining_items 
+                    FROM issuance_items 
+                    WHERE transaction_id = ?
+                ");
+                $stmt->execute([$transactionId]);
+                $remainingItems = $stmt->fetch(PDO::FETCH_ASSOC)['remaining_items'];
+                
+                // If NO items remain, DELETE the transaction
+                if ($remainingItems == 0) {
+                    $stmt = $pdo->prepare("
+                        DELETE FROM issuance_transactions 
+                        WHERE transaction_id = ?
+                    ");
+                    $stmt->execute([$transactionId]);
+                    
+                    if ($stmt->rowCount() > 0) {
+                        $deletedTransactions++;
+                    }
+                }
+            }
+        }
+        
+        // ═══════════════════════════════════════════════════════════════
+        // STEP 3: DELETE FROM INVENTORY (items table)
+        // ═══════════════════════════════════════════════════════════════
+        $stmt = $pdo->prepare("DELETE FROM items WHERE item_code = ?");
+        $stmt->execute([$itemCode]);
+        $deletedFromInventory = $stmt->rowCount();
+        
+        // ═══════════════════════════════════════════════════════════════
+        // STEP 4: DELETE IMAGE FILE FROM SERVER
+        // ═══════════════════════════════════════════════════════════════
+        if ($item['image_path']) {
+            deleteImageFile($item['image_path']);
+        }
+        
+        // ═══════════════════════════════════════════════════════════════
+        // COMMIT ALL CHANGES
+        // ═══════════════════════════════════════════════════════════════
+        $pdo->commit();
+        
+        // Build success message
+        $message = "✅ Item '{$item['item_name']}' deleted successfully";
+        
+        if ($cascadeDelete === '1' && $hasIssuances) {
+            $details = [];
+            if ($deletedIssuanceItems > 0) {
+                $details[] = "{$deletedIssuanceItems} issuance record(s)";
+            }
+            if ($deletedTransactions > 0) {
+                $details[] = "{$deletedTransactions} transaction(s)";
+            }
+            if (!empty($details)) {
+                $message .= ". Also removed: " . implode(", ", $details);
+            }
+        }
+        
+        sendResponse(true, $message, [
+            'deleted_from_inventory' => $deletedFromInventory,
+            'deleted_issuance_items' => $deletedIssuanceItems,
+            'deleted_transactions' => $deletedTransactions,
+            'cascade_enabled' => $cascadeDelete === '1'
+        ]);
+        
     } catch (PDOException $e) {
-        sendResponse(false, 'Failed to delete item: ' . $e->getMessage());
+        // ═══════════════════════════════════════════════════════════════
+        // ROLLBACK ON ERROR
+        // ═══════════════════════════════════════════════════════════════
+        if ($pdo->inTransaction()) {
+            $pdo->rollBack();
+        }
+        
+        // Check for foreign key constraint error
+        if (strpos($e->getMessage(), '1451') !== false) {
+            sendResponse(false, 'Cannot delete: Item has issuance history. Enable cascade delete to proceed.', [
+                'error_code' => 'FOREIGN_KEY_CONSTRAINT'
+            ]);
+        } else {
+            sendResponse(false, 'Database error: ' . $e->getMessage());
+        }
     }
 }
 
@@ -496,3 +661,4 @@ function adjustStock($pdo) {
         sendResponse(false, 'Failed to adjust stock: ' . $e->getMessage());
     }
 }
+?>

@@ -32,19 +32,36 @@ document.getElementById("loginForm").addEventListener("submit", async function (
         console.log("Response data:", data);
 
         if (data.success) {
+            // Check if user is Active (double check client-side)
+            if (data.user.status !== 'Active') {
+                showAlert('Your account is inactive. Please contact your administrator.', 'warning', true);
+                
+                if (btnText && btnLoader) {
+                    btnText.classList.remove("d-none");
+                    btnLoader.classList.add("d-none");
+                }
+                btn.disabled = false;
+                return;
+            }
+
             // Set client-side session with ROLE and PERMISSIONS
             sessionStorage.setItem('isLoggedIn', 'true');
             sessionStorage.setItem('userName', data.user.name);
             sessionStorage.setItem('userId', data.user.user_id);
             sessionStorage.setItem('userRole', data.user.role_name);
             sessionStorage.setItem('roleId', data.user.role_id);
+            sessionStorage.setItem('userStatus', data.user.status);
             sessionStorage.setItem('permissions', JSON.stringify(data.user.permissions));
             
             console.log('User logged in:', {
                 name: data.user.name,
                 role: data.user.role_name,
+                status: data.user.status,
                 permissions: data.user.permissions
             });
+            
+            // Show success message
+            // showAlert('Login successful! Redirecting...', 'success');
             
             // Redirect based on role
             setTimeout(() => {
@@ -55,9 +72,14 @@ document.getElementById("loginForm").addEventListener("submit", async function (
                     // Others go to dashboard
                     window.location.href = "../index.php";
                 }
-            }, 500);
+            }, 1000);
         } else {
-            showAlert(data.message, 'danger');
+            // Handle different error types
+            if (data.error_type === 'inactive_account') {
+                showAlert(data.message, 'warning', true);
+            } else {
+                showAlert(data.message, 'danger', false);
+            }
             
             if (btnText && btnLoader) {
                 btnText.classList.remove("d-none");
@@ -78,18 +100,115 @@ document.getElementById("loginForm").addEventListener("submit", async function (
     }
 });
 
-// Helper function to show alerts
-function showAlert(message, type = 'danger') {
+// Helper function to show alerts with icons and better styling
+function showAlert(message, type = 'danger', isInactiveAccount = false) {
     const alertContainer = document.getElementById('alertContainer');
+    
+    const iconMap = {
+        success: 'check-circle',
+        danger: 'exclamation-circle',
+        warning: 'exclamation-triangle',
+        info: 'info-circle'
+    };
+    
+    const icon = iconMap[type] || 'info-circle';
+    
+    // Special handling for inactive account - show modal instead
+    if (isInactiveAccount) {
+        showInactiveAccountModal(message);
+        return;
+    }
+    
     if (alertContainer) {
         alertContainer.innerHTML = `
             <div class="alert alert-${type} alert-dismissible fade show" role="alert">
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'} me-2"></i>
-                ${message}
+                <i class="fas fa-${icon} me-2"></i>
+                <strong>${message}</strong>
                 <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
             </div>
         `;
+        
+        // Auto-dismiss after 5 seconds for non-critical alerts
+        if (type === 'success' || type === 'info') {
+            setTimeout(() => {
+                const alert = alertContainer.querySelector('.alert');
+                if (alert) {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                }
+            }, 5000);
+        }
     } else {
         alert(message);
     }
 }
+
+// Show inactive account modal with professional UI
+function showInactiveAccountModal(message) {
+    // Remove any existing modal
+    const existingModal = document.getElementById('inactiveAccountModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'inactiveAccountModal';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-warning">
+                <div class="modal-header bg-warning text-dark">
+                    <h5 class="modal-title">
+                        <i class="fas fa-exclamation-triangle me-2"></i>
+                        Account Inactive
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body text-center">
+                    <div class="mb-4">
+                        <i class="fas fa-user-lock fa-4x text-warning"></i>
+                    </div>
+                    <h5 class="mb-3">Your account has been deactivated</h5>
+                    <p class="text-muted mb-4">${message}</p>
+                    <div class="alert alert-light border">
+                        <small class="text-muted">
+                            <i class="fas fa-info-circle me-2"></i>
+                            If you believe this is an error, please reach out to your system administrator for assistance.
+                        </small>
+                    </div>
+                </div>
+                <div class="modal-footer justify-content-center">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Close
+                    </button>
+                    <button type="button" class="btn btn-primary" onclick="window.location.href='mailto:admin@example.com'">
+                        <i class="fas fa-envelope me-1"></i> Contact Administrator
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal, { backdrop: 'static', keyboard: false });
+    bsModal.show();
+    
+    modal.addEventListener('hidden.bs.modal', () => {
+        modal.remove();
+    });
+}
+
+// Clear alerts when user starts typing
+document.getElementById('user_id')?.addEventListener('input', () => {
+    const alertContainer = document.getElementById('alertContainer');
+    if (alertContainer) {
+        alertContainer.innerHTML = '';
+    }
+});
+
+document.getElementById('password')?.addEventListener('input', () => {
+    const alertContainer = document.getElementById('alertContainer');
+    if (alertContainer) {
+        alertContainer.innerHTML = '';
+    }
+});

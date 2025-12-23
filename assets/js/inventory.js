@@ -1,128 +1,3 @@
-// Enhanced Notification System
-// const NotificationUI = {
-//     showToast(message, type = 'info') {
-//         const toastContainer = this.getToastContainer();
-//         const toast = document.createElement('div');
-//         toast.className = `toast align-items-center text-white bg-${type} border-0`;
-//         toast.setAttribute('role', 'alert');
-//         toast.innerHTML = `
-//             <div class="d-flex">
-//                 <div class="toast-body">
-//                     <i class="fas fa-${this.getIcon(type)} me-2"></i>
-//                     ${message}
-//                 </div>
-//                 <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
-//             </div>
-//         `;
-        
-//         toastContainer.appendChild(toast);
-//         const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
-//         bsToast.show();
-        
-//         toast.addEventListener('hidden.bs.toast', () => toast.remove());
-//     },
-    
-//     showConfirm(options) {
-//         return new Promise((resolve) => {
-//             const modal = document.createElement('div');
-//             modal.className = 'modal fade';
-//             modal.innerHTML = `
-//                 <div class="modal-dialog modal-dialog-centered">
-//                     <div class="modal-content">
-//                         <div class="modal-header bg-${options.type || 'warning'} text-white">
-//                             <h5 class="modal-title">
-//                                 <i class="fas fa-${this.getIcon(options.type || 'warning')} me-2"></i>
-//                                 ${options.title || 'Confirm Action'}
-//                             </h5>
-//                             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-//                         </div>
-//                         <div class="modal-body">
-//                             <p class="mb-0">${options.message}</p>
-//                             ${options.detail ? `<small class="text-muted">${options.detail}</small>` : ''}
-//                         </div>
-//                         <div class="modal-footer">
-//                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-//                                 <i class="fas fa-times me-1"></i> Cancel
-//                             </button>
-//                             <button type="button" class="btn btn-${options.type || 'warning'}" id="confirmBtn">
-//                                 <i class="fas fa-check me-1"></i> ${options.confirmText || 'Confirm'}
-//                             </button>
-//                         </div>
-//                     </div>
-//                 </div>
-//             `;
-            
-//             document.body.appendChild(modal);
-//             const bsModal = new bootstrap.Modal(modal);
-//             bsModal.show();
-            
-//             modal.querySelector('#confirmBtn').addEventListener('click', () => {
-//                 bsModal.hide();
-//                 resolve(true);
-//             });
-            
-//             modal.addEventListener('hidden.bs.modal', () => {
-//                 modal.remove();
-//                 resolve(false);
-//             });
-//         });
-//     },
-    
-//     showError(message, details = null) {
-//         const modal = document.createElement('div');
-//         modal.className = 'modal fade';
-//         modal.innerHTML = `
-//             <div class="modal-dialog modal-dialog-centered">
-//                 <div class="modal-content">
-//                     <div class="modal-header bg-danger text-white">
-//                         <h5 class="modal-title">
-//                             <i class="fas fa-exclamation-circle me-2"></i>
-//                             Error
-//                         </h5>
-//                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-//                     </div>
-//                     <div class="modal-body">
-//                         <p class="mb-0">${message}</p>
-//                         ${details ? `<small class="text-muted d-block mt-2">${details}</small>` : ''}
-//                     </div>
-//                     <div class="modal-footer">
-//                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-//                     </div>
-//                 </div>
-//             </div>
-//         `;
-        
-//         document.body.appendChild(modal);
-//         const bsModal = new bootstrap.Modal(modal);
-//         bsModal.show();
-        
-//         modal.addEventListener('hidden.bs.modal', () => modal.remove());
-//     },
-    
-//     getToastContainer() {
-//         let container = document.getElementById('toastContainer');
-//         if (!container) {
-//             container = document.createElement('div');
-//             container.id = 'toastContainer';
-//             container.className = 'toast-container position-fixed top-0 end-0 p-3';
-//             container.style.zIndex = '9999';
-//             document.body.appendChild(container);
-//         }
-//         return container;
-//     },
-    
-//     getIcon(type) {
-//         const icons = {
-//             success: 'check-circle',
-//             danger: 'exclamation-circle',
-//             warning: 'exclamation-triangle',
-//             info: 'info-circle',
-//             primary: 'info-circle'
-//         };
-//         return icons[type] || 'info-circle';
-//     }
-// };
-
 /**
  * Initialize the inventory page
  */
@@ -273,7 +148,7 @@ function filterTable() {
 }
 
 /**
- * Load all inventory items (auto-updates min_stock)
+ * Load all inventory items
  */
 async function loadInventoryItems() {
     const tbody = document.querySelector('#inventoryTableBody');
@@ -285,7 +160,7 @@ async function loadInventoryItems() {
     tbody.innerHTML = `<tr><td colspan="8" class="text-center">
         <div class="spinner-border spinner-border-sm text-primary" role="status">
             <span class="visually-hidden">Loading...</span>
-        </div> Loading items and calculating reorder points...
+        </div> Loading items...
     </td></tr>`;
 
     try {
@@ -345,16 +220,16 @@ async function loadInventoryItems() {
                         </td>
                         <td>
                             <div class="d-flex gap-1">
-                                <button class="btn btn-sm btn-primary" onclick="editItem('${item.item_code}')" title="Edit">
+                                <button class="btn btn-sm btn-primary" onclick="editItem('${escapeHtml(item.item_code)}')" title="Edit">
                                     <i class="fas fa-edit"></i>
                                 </button>
-                                <button class="btn btn-sm btn-success" onclick="adjustStock('${item.item_code}', 'add')" title="Add Stock">
+                                <button class="btn btn-sm btn-success" onclick="adjustStock('${escapeHtml(item.item_code)}', 'add')" title="Add Stock">
                                     <i class="fas fa-plus"></i>
                                 </button>
-                                <button class="btn btn-sm btn-warning" onclick="adjustStock('${item.item_code}', 'remove')" title="Remove Stock">
+                                <button class="btn btn-sm btn-warning" onclick="adjustStock('${escapeHtml(item.item_code)}', 'remove')" title="Remove Stock">
                                     <i class="fas fa-minus"></i>
                                 </button>
-                                <button class="btn btn-sm btn-danger" onclick="deleteItem('${item.item_code}', '${escapeHtml(item.item_name)}')" title="Delete">
+                                <button class="btn btn-sm btn-danger" onclick="showDeleteModal('${escapeHtml(item.item_code)}', '${escapeHtml(item.item_name)}')" title="Delete">
                                     <i class="fas fa-trash"></i>
                                 </button>
                             </div>
@@ -371,7 +246,7 @@ async function loadInventoryItems() {
             <i class="fas fa-exclamation-triangle me-2"></i>
             Error loading items. Please try again.
         </td></tr>`;
-        NotificationUI.showError('Failed to load inventory items', error.message);
+        showToast('Failed to load inventory items', 'danger');
     }
 }
 
@@ -445,7 +320,7 @@ function updateInventoryStats(items) {
 }
 
 /**
- * Create new inventory item (min_stock auto-calculated)
+ * Create new inventory item
  */
 async function createInventoryItem() {
     const itemCode = document.getElementById('item_code').value.trim();
@@ -457,7 +332,7 @@ async function createInventoryItem() {
     const itemImage = document.getElementById('item_image').files[0];
 
     if (!itemCode || !itemName || !category || !size) {
-        NotificationUI.showError('Please fill in all required fields', 'Item code, name, category, and size are required.');
+        showToast('Please fill in all required fields', 'warning');
         return;
     }
 
@@ -483,11 +358,7 @@ async function createInventoryItem() {
         const result = await response.json();
 
         if (result.success) {
-            // FIXED: Remove the calculation reference
-            NotificationUI.showToast(
-                `Item "${itemCode}" added successfully!`, 
-                'success'
-            );
+            showToast(`Item "${itemCode}" added successfully!`, 'success');
 
             const modal = bootstrap.Modal.getInstance(document.getElementById('newItemModal'));
             modal.hide();
@@ -497,16 +368,16 @@ async function createInventoryItem() {
 
             loadInventoryItems();
         } else {
-            NotificationUI.showError('Failed to add item', result.message);
+            showToast('Failed to add item: ' + result.message, 'danger');
         }
     } catch (err) {
         console.error('Error details:', err);
-        NotificationUI.showError('An error occurred while adding the item', 'Please check your connection and try again.');
+        showToast('An error occurred while adding the item', 'danger');
     }
 }
 
 /**
- * Edit inventory item (shows auto-calculated min_stock)
+ * Edit inventory item - directly show edit form
  */
 async function editItem(itemCode) {
     try {
@@ -515,70 +386,76 @@ async function editItem(itemCode) {
         
         if (result.success) {
             const item = result.data;
-            
-            let editModal = document.getElementById('editItemModal');
-            if (!editModal) {
-                editModal = createEditModal();
-                document.body.appendChild(editModal);
-            }
-            
-            document.getElementById('edit_item_code').value = item.item_code;
-            document.getElementById('edit_item_name').value = item.item_name;
-            document.getElementById('edit_category').value = item.category;
-            document.getElementById('edit_size').value = item.size;
-            document.getElementById('edit_description').value = item.description || '';
-            document.getElementById('edit_quantity').value = item.quantity;
-            
-            // Display reorder point calculation details
-            document.getElementById('edit_reorder_info').innerHTML = `
-                <div class="alert alert-info mb-0">
-                    <h6 class="mb-2"><i class="fas fa-calculator"></i> Reorder Point Calculation</h6>
-                    <div class="row g-2 small">
-                        <div class="col-6">
-                            <strong>Yearly Usage:</strong> ${item.yearly_usage || 0} units
-                        </div>
-                        <div class="col-6">
-                            <strong>Daily Usage:</strong> ${item.daily_usage || 0} units/day
-                        </div>
-                        <div class="col-6">
-                            <strong>Lead Time:</strong> ${item.lead_time_days} days
-                        </div>
-                        <div class="col-6">
-                            <strong>Safety Stock:</strong> ${item.safety_stock} units (${item.safety_stock_days} days)
-                        </div>
-                        <div class="col-12 mt-2">
-                            <strong class="text-primary">
-                                <i class="fas fa-bell"></i> Reorder Point (Min Stock): ${item.min_stock} units
-                            </strong>
-                            <br><small class="text-muted">
-                                Formula: ((${item.yearly_usage}/365) × ${item.lead_time_days}) + ${item.safety_stock}
-                            </small>
-                        </div>
-                    </div>
-                </div>
-            `;
-
-            // Display existing image
-            const preview = document.getElementById('edit_item_image_preview');
-            if (item.image_url) {
-                preview.src = item.image_url;
-            } else {
-                preview.src = 'assets/no-image.png';
-            }
-            preview.classList.remove('d-none');
-            preview.onerror = function() {
-                this.src = 'assets/no-image.png';
-            };
-
-            const modal = new bootstrap.Modal(editModal);
-            modal.show();
+            showEditModal(item);
         } else {
-            NotificationUI.showError('Failed to load item data', result.message);
+            showToast('Failed to load item data: ' + result.message, 'danger');
         }
     } catch (err) {
         console.error(err);
-        NotificationUI.showError('Error loading item data', 'Please check your connection and try again.');
+        showToast('Error loading item data', 'danger');
     }
+}
+
+/**
+ * Show edit modal
+ */
+function showEditModal(item) {
+    let editModal = document.getElementById('editItemModal');
+    if (!editModal) {
+        editModal = createEditModal();
+        document.body.appendChild(editModal);
+    }
+    
+    document.getElementById('edit_item_code').value = item.item_code;
+    document.getElementById('edit_item_name').value = item.item_name;
+    document.getElementById('edit_category').value = item.category;
+    document.getElementById('edit_size').value = item.size;
+    document.getElementById('edit_description').value = item.description || '';
+    document.getElementById('edit_quantity').value = item.quantity;
+    
+    // Display reorder point calculation details
+    document.getElementById('edit_reorder_info').innerHTML = `
+        <div class="alert alert-info mb-0">
+            <h6 class="mb-2"><i class="fas fa-calculator"></i> Reorder Point Calculation</h6>
+            <div class="row g-2 small">
+                <div class="col-6">
+                    <strong>Yearly Usage:</strong> ${item.yearly_usage || 0} units
+                </div>
+                <div class="col-6">
+                    <strong>Daily Usage:</strong> ${item.daily_usage || 0} units/day
+                </div>
+                <div class="col-6">
+                    <strong>Lead Time:</strong> ${item.lead_time_days} days
+                </div>
+                <div class="col-6">
+                    <strong>Safety Stock:</strong> ${item.safety_stock} units (${item.safety_stock_days} days)
+                </div>
+                <div class="col-12 mt-2">
+                    <strong class="text-primary">
+                        <i class="fas fa-bell"></i> Reorder Point (Min Stock): ${item.min_stock} units
+                    </strong>
+                    <br><small class="text-muted">
+                        Formula: ((${item.yearly_usage}/365) × ${item.lead_time_days}) + ${item.safety_stock}
+                    </small>
+                </div>
+            </div>
+        </div>
+    `;
+
+    // Display existing image
+    const preview = document.getElementById('edit_item_image_preview');
+    if (item.image_url) {
+        preview.src = item.image_url;
+    } else {
+        preview.src = 'assets/no-image.png';
+    }
+    preview.classList.remove('d-none');
+    preview.onerror = function() {
+        this.src = 'assets/no-image.png';
+    };
+
+    const modal = new bootstrap.Modal(editModal);
+    modal.show();
 }
 
 /**
@@ -655,7 +532,7 @@ function createEditModal() {
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="button" class="btn btn-primary" onclick="updateInventoryItem()">
+                    <button type="button" class="btn btn-primary" onclick="showUpdateConfirmation()">
                         <i class="fas fa-save"></i> Update Item
                     </button>
                 </div>
@@ -666,7 +543,71 @@ function createEditModal() {
 }
 
 /**
- * Update inventory item (min_stock auto-recalculated)
+ * Show update confirmation modal
+ */
+function showUpdateConfirmation() {
+    const itemCode = document.getElementById('edit_item_code').value.trim();
+    const itemName = document.getElementById('edit_item_name').value.trim();
+    const category = document.getElementById('edit_category').value;
+    const size = document.getElementById('edit_size').value.trim();
+
+    if (!itemCode || !itemName || !category || !size) {
+        showToast('Please fill in all required fields', 'warning');
+        return;
+    }
+
+    // Create confirmation modal
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'updateConfirmModal';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-primary text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-save me-2"></i> Confirm Update
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <i class="fas fa-save fa-3x text-primary"></i>
+                    </div>
+                    <h6 class="text-center mb-3">Are you sure you want to save these changes?</h6>
+                    <div class="alert alert-info mb-0">
+                        <strong>${escapeHtml(itemName)}</strong>
+                        <p class="mb-0 mt-2 small">Code: ${escapeHtml(itemCode)}</p>
+                        <p class="mb-0 small">Category: ${escapeHtml(category)} | Size: ${escapeHtml(size)}</p>
+                        <p class="mb-0 mt-2 small text-muted">This will update the item information in the database.</p>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-primary" id="confirmUpdateBtn">
+                        <i class="fas fa-save me-1"></i> Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    // Handle confirmation
+    modal.querySelector('#confirmUpdateBtn').addEventListener('click', () => {
+        bsModal.hide();
+        updateInventoryItem();
+    });
+    
+    modal.addEventListener('hidden.bs.modal', () => modal.remove());
+}
+
+/**
+ * Update inventory item
  */
 async function updateInventoryItem() {
     const itemCode = document.getElementById('edit_item_code').value.trim();
@@ -678,7 +619,7 @@ async function updateInventoryItem() {
     const newImage = document.getElementById('edit_item_image').files[0];
 
     if (!itemCode || !itemName || !category || !size) {
-        NotificationUI.showError('Please fill in all required fields', 'Item code, name, category, and size are required.');
+        showToast('Please fill in all required fields', 'warning');
         return;
     }
 
@@ -704,7 +645,7 @@ async function updateInventoryItem() {
         const result = await response.json();
         
         if (result.success) {
-            NotificationUI.showToast(result.message, 'success');
+            showToast(result.message, 'success');
             
             const modal = bootstrap.Modal.getInstance(document.getElementById('editItemModal'));
             modal.hide();
@@ -714,16 +655,16 @@ async function updateInventoryItem() {
 
             loadInventoryItems();
         } else {
-            NotificationUI.showError('Failed to update item', result.message);
+            showToast('Failed to update item: ' + result.message, 'danger');
         }
     } catch (err) {
         console.error(err);
-        NotificationUI.showError('An error occurred while updating the item', 'Please check your connection and try again.');
+        showToast('An error occurred while updating the item', 'danger');
     }
 }
 
 /**
- * Adjust stock (add or remove) - auto-updates min_stock
+ * Adjust stock (add or remove)
  */
 async function adjustStock(itemCode, type) {
     const title = type === 'add' ? 'Add Stock' : 'Remove Stock';
@@ -774,7 +715,7 @@ async function adjustStock(itemCode, type) {
         const reason = modal.querySelector('#adjustReason').value.trim();
         
         if (!quantity || quantity <= 0) {
-            NotificationUI.showError('Invalid quantity', 'Please enter a valid quantity.');
+            showToast('Please enter a valid quantity', 'warning');
             return;
         }
         
@@ -794,15 +735,15 @@ async function adjustStock(itemCode, type) {
             const result = await response.json();
             
             if (result.success) {
-                NotificationUI.showToast(result.message, 'success');
+                showToast(result.message, 'success');
                 bsModal.hide();
                 loadInventoryItems();
             } else {
-                NotificationUI.showError('Failed to adjust stock', result.message);
+                showToast('Failed to adjust stock: ' + result.message, 'danger');
             }
         } catch (err) {
             console.error(err);
-            NotificationUI.showError('An error occurred', 'Please check your connection and try again.');
+            showToast('An error occurred', 'danger');
         }
     });
     
@@ -810,22 +751,165 @@ async function adjustStock(itemCode, type) {
 }
 
 /**
- * Delete inventory item
+ * Show delete confirmation modal with issuance check
  */
-async function deleteItem(itemCode, itemName) {
-    const confirmed = await NotificationUI.showConfirm({
-        title: 'Delete Item',
-        message: `Are you sure you want to delete item "${itemName}"?`,
-        detail: 'This action cannot be undone. All item data and images will be permanently removed.',
-        type: 'danger',
-        confirmText: 'Delete'
+async function showDeleteModal(itemCode, itemName) {
+    // First, check if item has issuance history
+    try {
+        const response = await fetch(`controller/inventory.php?action=checkItemUsage&item_code=${encodeURIComponent(itemCode)}`);
+        const result = await response.json();
+        
+        if (!result.success) {
+            showToast('Error checking item usage', 'danger');
+            return;
+        }
+        
+        const hasIssuances = result.data.has_issuances;
+        const issuanceCount = result.data.issuance_count;
+        const totalIssued = result.data.total_items_issued;
+        
+        // Create appropriate delete modal
+        createDeleteModal(itemCode, itemName, hasIssuances, issuanceCount, totalIssued);
+        
+    } catch (err) {
+        console.error('Error checking item usage:', err);
+        showToast('Error checking item usage', 'danger');
+    }
+}
+
+/**
+ * Create delete modal with appropriate warnings
+ */
+function createDeleteModal(itemCode, itemName, hasIssuances, issuanceCount, totalIssued) {
+    // Remove any existing delete modal
+    const existingModal = document.getElementById('deleteModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'deleteModal';
+    
+    let warningContent = '';
+    let cascadeOption = '';
+    
+    if (hasIssuances) {
+        warningContent = `
+            <div class="alert alert-danger mb-3">
+                <h6 class="alert-heading">
+                    <i class="fas fa-exclamation-triangle me-2"></i>
+                    Cannot Delete - Item Has Issuance History
+                </h6>
+                <hr>
+                <p class="mb-2"><strong>This item has been issued and is referenced in:</strong></p>
+                <ul class="mb-2">
+                    <li><strong>${issuanceCount}</strong> issuance transaction(s)</li>
+                    <li><strong>${totalIssued}</strong> total units issued</li>
+                </ul>
+                <p class="mb-0 small">
+                    <i class="fas fa-info-circle me-1"></i>
+                    Deleting this item would break historical issuance records.
+                </p>
+            </div>
+        `;
+        
+        cascadeOption = `
+            <div class="alert alert-warning mb-0">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="cascadeDeleteCheck">
+                    <label class="form-check-label" for="cascadeDeleteCheck">
+                        <strong>Enable Cascade Delete</strong>
+                        <br>
+                        <small class="text-danger">
+                            ⚠️ This will permanently delete the item AND all ${issuanceCount} related issuance record(s). 
+                            This action cannot be undone and will affect your historical data.
+                        </small>
+                    </label>
+                </div>
+            </div>
+        `;
+    } else {
+        warningContent = `
+            <div class="alert alert-warning mb-0">
+                <strong>${escapeHtml(itemName)}</strong>
+                <p class="mb-0 mt-2 small">Code: ${escapeHtml(itemCode)}</p>
+                <p class="mb-0 mt-2 small text-danger">
+                    <i class="fas fa-exclamation-triangle me-1"></i>
+                    This action cannot be undone. All item data and images will be permanently removed.
+                </p>
+            </div>
+        `;
+    }
+    
+    modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-trash-alt me-2"></i> 
+                        ${hasIssuances ? 'Delete Item with History' : 'Confirm Deletion'}
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <i class="fas fa-trash-alt fa-3x text-danger"></i>
+                    </div>
+                    <h6 class="text-center mb-3">
+                        ${hasIssuances ? 'This item cannot be deleted normally' : 'Are you sure you want to delete this item?'}
+                    </h6>
+                    ${warningContent}
+                    ${cascadeOption}
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Cancel
+                    </button>
+                    <button type="button" class="btn btn-danger" id="confirmDeleteBtn" ${hasIssuances ? 'disabled' : ''}>
+                        <i class="fas fa-trash me-1"></i> Delete
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    // Handle cascade checkbox
+    if (hasIssuances) {
+        const cascadeCheck = modal.querySelector('#cascadeDeleteCheck');
+        const deleteBtn = modal.querySelector('#confirmDeleteBtn');
+        
+        cascadeCheck.addEventListener('change', () => {
+            deleteBtn.disabled = !cascadeCheck.checked;
+            if (cascadeCheck.checked) {
+                deleteBtn.innerHTML = '<i class="fas fa-exclamation-triangle me-1"></i> Delete with History';
+            } else {
+                deleteBtn.innerHTML = '<i class="fas fa-trash me-1"></i> Delete';
+            }
+        });
+    }
+    
+    // Handle delete confirmation
+    modal.querySelector('#confirmDeleteBtn').addEventListener('click', () => {
+        const cascadeEnabled = hasIssuances && modal.querySelector('#cascadeDeleteCheck')?.checked;
+        deleteItem(itemCode, itemName, cascadeEnabled, bsModal);
     });
     
-    if (!confirmed) return;
+    modal.addEventListener('hidden.bs.modal', () => modal.remove());
+}
 
+/**
+ * Delete inventory item with error handling
+ */
+async function deleteItem(itemCode, itemName, cascadeDelete = false, modalInstance) {
     const formData = new FormData();
     formData.append('action', 'deleteItem');
     formData.append('item_code', itemCode);
+    formData.append('cascade_delete', cascadeDelete ? '1' : '0');
 
     try {
         const response = await fetch('controller/inventory.php', {
@@ -836,45 +920,135 @@ async function deleteItem(itemCode, itemName) {
         const result = await response.json();
         
         if (result.success) {
-            NotificationUI.showToast(result.message, 'success');
+            showToast(result.message, 'success');
+            modalInstance.hide();
             loadInventoryItems();
         } else {
-            NotificationUI.showError('Failed to delete item', result.message);
+            // Handle specific error: item has issuances
+            if (result.message === 'CANNOT_DELETE_HAS_ISSUANCES') {
+                modalInstance.hide();
+                showIssuanceErrorModal(
+                    itemCode, 
+                    itemName, 
+                    result.data.issuance_count, 
+                    result.data.total_issued
+                );
+            } else {
+                showToast('Failed to delete: ' + result.message, 'danger');
+            }
         }
     } catch (err) {
-        console.error(err);
-        NotificationUI.showError('An error occurred while deleting the item', 'Please check your connection and try again.');
+        console.error('Delete error:', err);
+        showToast('An error occurred while deleting the item', 'danger');
     }
 }
 
 /**
- * Recalculate all min_stock values (batch update)
+ * Show error modal when item has issuances
  */
-async function recalculateAllMinStock() {
-    const confirmed = await NotificationUI.showConfirm({
-        title: 'Recalculate All Reorder Points',
-        message: 'This will recalculate minimum stock for all items based on current usage data.',
-        detail: 'This process may take a moment for large inventories.',
-        type: 'info',
-        confirmText: 'Recalculate'
-    });
+function showIssuanceErrorModal(itemCode, itemName, issuanceCount, totalIssued) {
+    const modal = document.createElement('div');
+    modal.className = 'modal fade';
+    modal.id = 'issuanceErrorModal';
+    modal.innerHTML = `
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-danger">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title">
+                        <i class="fas fa-ban me-2"></i> Cannot Delete Item
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="text-center mb-3">
+                        <i class="fas fa-ban fa-3x text-danger"></i>
+                    </div>
+                    <h6 class="text-center text-danger mb-3">This item cannot be deleted</h6>
+                    
+                    <div class="alert alert-danger">
+                        <h6 class="mb-2"><strong>${escapeHtml(itemName)}</strong></h6>
+                        <p class="mb-1 small">Code: ${escapeHtml(itemCode)}</p>
+                        <hr class="my-2">
+                        <p class="mb-1">
+                            <i class="fas fa-history me-2"></i>
+                            This item has been issued <strong>${issuanceCount}</strong> time(s)
+                        </p>
+                        <p class="mb-0">
+                            <i class="fas fa-boxes me-2"></i>
+                            Total units issued: <strong>${totalIssued}</strong>
+                        </p>
+                    </div>
+                    
+                    <div class="alert alert-info mb-0">
+                        <h6><i class="fas fa-lightbulb me-2"></i> Options:</h6>
+                        <ol class="mb-0 ps-3">
+                            <li class="mb-2">
+                                <strong>Set quantity to 0</strong> - Keep the item in the system but mark it as out of stock
+                            </li>
+                            <li class="mb-0">
+                                <strong>Enable cascade delete</strong> - Delete the item AND all related issuance history (⚠️ This will permanently erase historical data)
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="fas fa-times me-1"></i> Close
+                    </button>
+                    <button type="button" class="btn btn-danger" onclick="showDeleteModal('${escapeHtml(itemCode)}', '${escapeHtml(itemName)}')">
+                        <i class="fas fa-exclamation-triangle me-1"></i> Try Again with Cascade
+                    </button>
+                </div>
+            </div>
+        </div>
+    `;
     
-    if (!confirmed) return;
+    document.body.appendChild(modal);
+    const bsModal = new bootstrap.Modal(modal);
+    bsModal.show();
+    
+    modal.addEventListener('hidden.bs.modal', () => modal.remove());
+}
 
-    try {
-        const response = await fetch('controller/inventory.php?action=recalculateAllMinStock');
-        const result = await response.json();
-        
-        if (result.success) {
-            NotificationUI.showToast(result.message, 'success');
-            loadInventoryItems();
-        } else {
-            NotificationUI.showError('Failed to recalculate', result.message);
-        }
-    } catch (err) {
-        console.error(err);
-        NotificationUI.showError('An error occurred', 'Please check your connection and try again.');
+/**
+ * Simple toast notification function
+ */
+function showToast(message, type = 'info') {
+    // Create toast container if it doesn't exist
+    let container = document.getElementById('toastContainer');
+    if (!container) {
+        container = document.createElement('div');
+        container.id = 'toastContainer';
+        container.className = 'toast-container position-fixed top-0 end-0 p-3';
+        container.style.zIndex = '9999';
+        document.body.appendChild(container);
     }
+    
+    const icons = {
+        success: 'check-circle',
+        danger: 'exclamation-circle',
+        warning: 'exclamation-triangle',
+        info: 'info-circle'
+    };
+    
+    const toast = document.createElement('div');
+    toast.className = `toast align-items-center text-white bg-${type} border-0`;
+    toast.setAttribute('role', 'alert');
+    toast.innerHTML = `
+        <div class="d-flex">
+            <div class="toast-body">
+                <i class="fas fa-${icons[type] || 'info-circle'} me-2"></i>
+                ${message}
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+        </div>
+    `;
+    
+    container.appendChild(toast);
+    const bsToast = new bootstrap.Toast(toast, { delay: 4000 });
+    bsToast.show();
+    
+    toast.addEventListener('hidden.bs.toast', () => toast.remove());
 }
 
 /**

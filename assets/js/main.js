@@ -22,9 +22,9 @@ function canModify(page) {
         return true;
     }
     
-    // Supervisor can only modify POS
+    // Supervisor can modify POS and view others
     if (userRole === 'supervisor') {
-        return permissions.can_modify && permissions.can_modify.includes(page);
+        return page === 'pos' || (permissions.can_modify && permissions.can_modify.includes(page));
     }
     
     // Recruiter can modify POS
@@ -99,6 +99,13 @@ function logout() {
 function applyReadOnlyMode(pageName) {
     const userRole = getUserRole().toLowerCase();
     
+    // CRITICAL FIX: Supervisors should NOT have read-only mode on POS
+    if (userRole === 'supervisor' && pageName === 'pos') {
+        console.log('Supervisor on POS - FULL ACCESS, no read-only mode');
+        return; // Exit early - do NOT apply any restrictions
+    }
+    
+    // Apply read-only mode for supervisors on non-POS pages
     if (userRole === 'supervisor' && pageName !== 'pos') {
         setTimeout(() => {
             const pageContent = document.getElementById('pageContent');
@@ -396,10 +403,12 @@ document.addEventListener("DOMContentLoaded", function() {
             .then(html => {
                 pageContent.innerHTML = html;
 
-                // Apply read-only mode for supervisors on non-POS pages
+                // CRITICAL FIX: Only apply read-only mode for supervisor on NON-POS pages
                 const userRole = getUserRole().toLowerCase();
                 if (userRole === 'supervisor' && pageName !== 'pos') {
                     applyReadOnlyMode(pageName);
+                } else if (userRole === 'supervisor' && pageName === 'pos') {
+                    console.log('Supervisor accessing POS - FULL FUNCTIONALITY ENABLED');
                 }
 
                 if (pageName) {

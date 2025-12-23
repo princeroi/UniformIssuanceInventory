@@ -174,13 +174,14 @@ function createUser($pdo) {
 
 
 // Update user
+// Update user function (modified to NOT change password)
 function updateUser($pdo) {
     $id = $_POST['id'] ?? null;
     $firstName = trim($_POST['firstName'] ?? '');
     $lastName = trim($_POST['lastName'] ?? '');
     $username = trim($_POST['username'] ?? '');
     $email = trim($_POST['email'] ?? '');
-    $password = trim($_POST['password'] ?? ''); // if empty, generate based on ID + name
+    // Password is NO LONGER accepted from edit form
     $roleId = $_POST['roleId'] ?? null;
     $departmentId = $_POST['departmentId'] ?? null;
     $status = $_POST['status'] ?? 'Active';
@@ -215,20 +216,13 @@ function updateUser($pdo) {
         sendResponse(false, 'Email already exists');
     }
 
-    // Generate password if empty
-    if (empty($password)) {
-        $password = str_replace(' ', '', $username . $firstName . $lastName);
-    }
-    $hashedPassword = password_hash($password, PASSWORD_DEFAULT);
-
-    // Update user
+    // Update user WITHOUT changing password
     $stmt = $pdo->prepare("
         UPDATE users 
         SET first_name = ?, 
             last_name = ?, 
             user_id = ?, 
             email = ?, 
-            password = ?,
             role_id = ?, 
             department_id = ?, 
             status = ?,
@@ -241,7 +235,6 @@ function updateUser($pdo) {
         $lastName,
         $username,
         $email,
-        $hashedPassword,
         $roleId,
         $departmentId,
         $status,
@@ -249,7 +242,7 @@ function updateUser($pdo) {
     ]);
 
     if ($updated) {
-        sendResponse(true, 'User updated successfully. Password: ' . $password);
+        sendResponse(true, 'User updated successfully');
     } else {
         sendResponse(false, 'Failed to update user');
     }
