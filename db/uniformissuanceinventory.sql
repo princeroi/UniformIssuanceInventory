@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: 127.0.0.1
--- Generation Time: Dec 23, 2025 at 07:51 AM
+-- Generation Time: Dec 23, 2025 at 08:01 AM
 -- Server version: 10.4.32-MariaDB
 -- PHP Version: 8.2.12
 
@@ -54,16 +54,7 @@ CREATE TABLE `deliveries` (
 --
 
 INSERT INTO `deliveries` (`id`, `transaction_number`, `item_code`, `item_name`, `category`, `size`, `quantity`, `supplier`, `received_by`, `order_date`, `expected_date`, `delivery_status`, `delivered_date`, `notes`, `created_at`, `updated_at`, `quantity_ordered`, `quantity_delivered`, `quantity_pending`) VALUES
-(1, 'DEL202512110001', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 50, 'SSI', 'SSI', '2025-12-11', '2025-12-18', 'Delivered', '2025-12-11 11:28:42', '', '2025-12-11 03:28:18', '2025-12-16 01:07:02', 50, 50, 0),
-(2, 'DEL202512110002', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 1, 'ssi', 'ssi', '2025-12-11', '2025-12-18', 'Delivered', '2025-12-11 12:00:29', '', '2025-12-11 04:00:20', '2025-12-16 01:07:02', 1, 1, 0),
-(3, 'DEL202512110003', 'M-AB-T-SHIRT', 'Medium Aqua Blue T-Shirt', 'T-Shirt', 'M', 500, 'SSI', 'Prince', '2025-12-11', '2025-12-18', 'Delivered', '2025-12-11 14:41:28', '', '2025-12-11 06:41:24', '2025-12-16 01:07:02', 500, 500, 0),
-(4, 'DEL202512160001', 'M-AB-T-SHIRT', 'Medium Aqua Blue T-Shirt', 'T-Shirt', 'M', 1, 'Ms. Eppie', 'Aira', '2025-12-16', '2025-12-23', 'Delivered', '2025-12-16 09:11:42', '', '2025-12-16 01:08:36', '2025-12-16 01:11:42', 1, 1, 0),
-(5, 'DEL202512160002', 'M-AB-T-SHIRT', 'Medium Aqua Blue T-Shirt', 'T-Shirt', 'M', 50, 'Ms. Eppie', 'Aira', '2025-12-16', '2025-12-23', 'Delivered', '2025-12-16 09:12:12', '', '2025-12-16 01:12:05', '2025-12-16 01:12:12', 50, 50, 0),
-(6, 'DEL202512160003', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 50, 'Ms. Eppie', 'Aira', '2025-12-16', '2025-12-23', '', NULL, '', '2025-12-16 01:12:48', '2025-12-16 06:23:02', 50, 45, 5),
-(7, 'DEL202512160004', 'M-AB-T-SHIRT', 'Medium Aqua Blue T-Shirt', 'T-Shirt', 'M', 1, 'SSI', 'Prince', '2025-12-16', '2025-12-23', 'Delivered', '2025-12-23 08:21:23', '', '2025-12-16 06:22:06', '2025-12-23 00:21:23', 1, 1, 0),
-(8, 'DEL202512170001', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 100, 'Ms Eppie', 'Prince', '2025-12-17', '2025-12-24', '', NULL, '', '2025-12-17 06:58:47', '2025-12-23 00:21:53', 100, 80, 20),
-(9, 'DEL202512230001', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 40, 'SSI', 'Prince', '2025-12-23', '2025-12-30', 'Pending', NULL, '', '2025-12-23 05:16:32', '2025-12-23 05:16:32', 40, 0, 40),
-(10, 'DEL202512230002', 'Medium-AB-T-SHIRT', 'Medium Aqua Blue T-Shirt', 'T-Shirt', 'M', 100, 'SAMPLE', 'SAMPLE', '2025-12-23', '2025-12-30', 'Delivered', '2025-12-23 14:34:32', '', '2025-12-23 06:34:19', '2025-12-23 06:34:32', 100, 100, 0);
+(11, 'DEL202512230001', 'S-B-T-Shirt', 'Small Blue T-Shirt', 'T-Shirt', 'S', 100, 'sample', 'sample', '2025-12-23', '2025-12-30', 'Delivered', '2025-12-23 14:59:38', '', '2025-12-23 06:59:16', '2025-12-23 06:59:38', 100, 100, 0);
 
 -- --------------------------------------------------------
 
@@ -85,16 +76,7 @@ CREATE TABLE `delivery_history` (
 --
 
 INSERT INTO `delivery_history` (`id`, `delivery_id`, `transaction_number`, `quantity_delivered`, `delivered_date`, `notes`) VALUES
-(1, 4, 'DEL202512160001', 1, '2025-12-16 09:11:42', ''),
-(2, 5, 'DEL202512160002', 50, '2025-12-16 09:12:12', ''),
-(3, 6, 'DEL202512160003', 30, '2025-12-16 09:12:56', ''),
-(4, 6, 'DEL202512160003', 5, '2025-12-16 09:13:19', ''),
-(5, 6, 'DEL202512160003', 10, '2025-12-16 14:23:02', ''),
-(6, 8, 'DEL202512170001', 50, '2025-12-17 14:59:36', ''),
-(7, 8, 'DEL202512170001', 25, '2025-12-17 15:10:42', ''),
-(8, 7, 'DEL202512160004', 1, '2025-12-23 08:21:23', ''),
-(9, 8, 'DEL202512170001', 5, '2025-12-23 08:21:53', ''),
-(10, 10, 'DEL202512230002', 100, '2025-12-23 14:34:32', '');
+(11, 11, 'DEL202512230001', 100, '2025-12-23 14:59:38', '');
 
 -- --------------------------------------------------------
 
@@ -141,53 +123,7 @@ CREATE TABLE `issuance_items` (
 --
 
 INSERT INTO `issuance_items` (`id`, `transaction_id`, `item_code`, `item_name`, `category`, `size`, `site_assigned`, `quantity`, `issued_date`) VALUES
-(2, 'TXN-20251211-015549', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', NULL, 4, '2025-12-11 11:31:21'),
-(3, 'TXN-20251211-815741', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', NULL, 3, '2025-12-11 11:51:48'),
-(4, 'TXN-20251211-952888', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', NULL, 3, '2025-12-11 11:53:06'),
-(5, 'TXN-20251211-682034', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', NULL, 4, '2025-12-11 11:53:53'),
-(6, 'TXN-20251211-082269', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', NULL, 1, '2025-12-11 11:55:57'),
-(7, 'TXN-20251211-514986', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', NULL, 1, '2025-12-11 11:58:49'),
-(8, 'TXN-20251211-812129', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', NULL, 8, '2025-12-11 13:11:50'),
-(9, 'TXN-20251211-121016', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', NULL, 30, '2025-12-11 13:17:52'),
-(10, 'TXN-20251211-005099', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', NULL, 2, '2025-12-11 13:22:08'),
-(11, 'TXN-20251211-041961', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', NULL, 5, '2025-12-11 13:53:45'),
-(12, 'TXN-20251211-332295', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', NULL, 30, '2025-12-11 14:01:14'),
-(13, 'TXN-20251211-953960', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', NULL, 400, '2025-12-11 14:01:44'),
-(14, 'TXN-20251211-828834', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', NULL, 1, '2025-12-11 14:03:55'),
-(18, 'TXN-20251216-231071', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', NULL, 1, '2025-12-16 09:39:15'),
-(20, 'TXN-20251217-101561', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 3, '2025-12-17 07:21:49'),
-(21, 'TXN-20251217-450952', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 5, '2025-12-17 10:39:40'),
-(22, 'TXN-20251217-600491', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 5, '2025-12-17 10:41:15'),
-(23, 'TXN-20251217-683671', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 3, '2025-12-17 10:45:17'),
-(24, 'TXN-20251217-408124', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 10:47:38'),
-(25, 'TXN-20251217-206830', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 3, '2025-12-17 10:53:59'),
-(26, 'TXN-20251217-839290', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 10:55:51'),
-(27, 'TXN-20251217-876279', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 10:58:13'),
-(28, 'TXN-20251217-230668', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 21, '2025-12-17 11:00:04'),
-(29, 'TXN-20251217-142313', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 11:01:46'),
-(30, 'TXN-20251217-534090', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 11:03:09'),
-(31, 'TXN-20251217-079294', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 11:04:44'),
-(32, 'TXN-20251217-425078', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 11:06:07'),
-(33, 'TXN-20251217-140581', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 11:33:05'),
-(34, 'TXN-20251217-191062', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 11:33:54'),
-(35, 'TXN-20251217-097549', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 11:38:55'),
-(36, 'TXN-20251217-193125', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 11:42:30'),
-(37, 'TXN-20251217-674210', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 11:43:06'),
-(38, 'TXN-20251217-851488', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 11:43:50'),
-(39, 'TXN-20251217-099092', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 11:45:22'),
-(40, 'TXN-20251217-375002', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 11:46:53'),
-(41, 'TXN-20251217-806757', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 11:49:09'),
-(42, 'TXN-20251217-760492', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Distribution Center', 1, '2025-12-17 11:49:32'),
-(43, 'TXN-20251217-668847', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 12:01:06'),
-(44, 'TXN-20251217-231161', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 13:41:51'),
-(45, 'TXN-20251217-580976', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 14:07:56'),
-(47, 'TXN-20251217-486713', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-17 14:08:30'),
-(48, 'TXN-20251217-182631', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 3, '2025-12-17 14:58:04'),
-(49, 'TXN-20251217-360325', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 9, '2025-12-17 15:09:38'),
-(50, 'TXN-20251217-227937', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 2, '2025-12-17 16:34:53'),
-(52, 'TXN-20251222-252323', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 1, '2025-12-22 16:58:56'),
-(54, 'TXN-20251223-921725', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 6, '2025-12-23 08:50:40'),
-(58, 'TXN-20251223-555855', 'S-AB-T-SHIRT', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', 'Head Office', 15, '2025-12-23 14:27:00');
+(59, 'TXN-20251223-497346', 'S-B-T-Shirt', 'Small Blue T-Shirt', 'T-Shirt', 'S', 'Head Office', 2, '2025-12-23 15:00:17');
 
 -- --------------------------------------------------------
 
@@ -213,53 +149,7 @@ CREATE TABLE `issuance_transactions` (
 --
 
 INSERT INTO `issuance_transactions` (`id`, `transaction_id`, `employee_name`, `issuance_type`, `site_assigned`, `total_items`, `issued_by`, `issued_by_id`, `issuance_date`, `transaction_date`) VALUES
-(2, 'TXN-20251211-015549', 'Prince', 'New Hire', NULL, 4, 'System', NULL, '2025-12-11 11:31:21', '2025-12-11 11:31:21'),
-(3, 'TXN-20251211-815741', 'Prince', 'New Hire', NULL, 3, 'System', NULL, '2025-12-11 11:51:48', '2025-12-11 11:51:48'),
-(4, 'TXN-20251211-952888', 'Prince', 'New Hire', NULL, 3, 'System', NULL, '2025-12-11 11:53:06', '2025-12-11 11:53:06'),
-(5, 'TXN-20251211-682034', 'Prince', 'New Hire', NULL, 4, 'System', NULL, '2025-12-11 11:53:53', '2025-12-11 11:53:53'),
-(6, 'TXN-20251211-082269', 'Prince', 'New Hire', NULL, 1, 'System', NULL, '2025-12-11 11:55:57', '2025-12-11 11:55:57'),
-(7, 'TXN-20251211-514986', 'aira', 'New Hire', NULL, 1, 'System', NULL, '2025-12-11 11:58:49', '2025-12-11 11:58:49'),
-(8, 'TXN-20251211-812129', 'Prince', 'New Hire', NULL, 8, 'System', NULL, '2025-12-11 13:11:50', '2025-12-11 13:11:50'),
-(9, 'TXN-20251211-121016', 'Prince', 'New Hire', NULL, 30, 'System', NULL, '2025-12-11 13:17:52', '2025-12-11 13:17:52'),
-(10, 'TXN-20251211-005099', 'Prince', 'New Hire', NULL, 2, 'System', NULL, '2025-12-11 13:22:08', '2025-12-11 13:22:08'),
-(11, 'TXN-20251211-041961', 'Prince', 'New Hire', NULL, 5, 'System', NULL, '2025-12-11 13:53:45', '2025-12-11 13:53:45'),
-(12, 'TXN-20251211-332295', 'Prince', 'New Hire', NULL, 30, 'System', NULL, '2025-12-11 14:01:14', '2025-12-11 14:01:14'),
-(13, 'TXN-20251211-953960', 'Prince', 'New Hire', NULL, 400, 'System', NULL, '2025-12-11 14:01:44', '2025-12-11 14:01:44'),
-(14, 'TXN-20251211-828834', 'Prince', 'New Hire', NULL, 1, 'System', NULL, '2025-12-11 14:03:55', '2025-12-11 14:03:55'),
-(17, 'TXN-20251216-231071', 'AIRA', 'New Hire', NULL, 2, 'System', NULL, '2025-12-16 09:39:15', '2025-12-16 09:39:15'),
-(19, 'TXN-20251217-101561', 'Prince', 'New Hire', 'Head Office', 3, 'System', NULL, '2025-12-17 07:21:49', '2025-12-17 07:21:49'),
-(20, 'TXN-20251217-450952', 'Prince', 'New Hire', 'Head Office', 5, 'System', NULL, '2025-12-17 10:39:40', '2025-12-17 10:39:40'),
-(21, 'TXN-20251217-600491', 'Prince', 'New Hire', 'Head Office', 5, 'System', NULL, '2025-12-17 10:41:15', '2025-12-17 10:41:15'),
-(22, 'TXN-20251217-683671', 'Prince', 'New Hire', 'Head Office', 3, 'System', NULL, '2025-12-17 10:45:17', '2025-12-17 10:45:17'),
-(23, 'TXN-20251217-408124', 'Prince', 'New Hire', 'Head Office', 1, 'System', NULL, '2025-12-17 10:47:38', '2025-12-17 10:47:38'),
-(24, 'TXN-20251217-206830', 'Prince', 'New Hire', 'Head Office', 3, 'System', NULL, '2025-12-17 10:53:59', '2025-12-17 10:53:59'),
-(25, 'TXN-20251217-839290', 'Prince', 'New Hire', 'Head Office', 1, 'System', NULL, '2025-12-17 10:55:51', '2025-12-17 10:55:51'),
-(26, 'TXN-20251217-876279', 'Prince', 'New Hire', 'Head Office', 1, 'System', NULL, '2025-12-17 10:58:13', '2025-12-17 10:58:13'),
-(27, 'TXN-20251217-230668', 'Prince', 'New Hire', 'Head Office', 21, 'System', NULL, '2025-12-17 11:00:04', '2025-12-17 11:00:04'),
-(28, 'TXN-20251217-142313', 'Prince', 'New Hire', 'Head Office', 1, 'System', NULL, '2025-12-17 11:01:46', '2025-12-17 11:01:46'),
-(29, 'TXN-20251217-534090', 'Prince', 'New Hire', 'Head Office', 1, 'System', NULL, '2025-12-17 11:03:09', '2025-12-17 11:03:09'),
-(30, 'TXN-20251217-079294', 'Prince', 'New Hire', 'Head Office', 1, 'System', NULL, '2025-12-17 11:04:44', '2025-12-17 11:04:44'),
-(31, 'TXN-20251217-425078', 'Prince', 'New Hire', 'Head Office', 1, 'System', NULL, '2025-12-17 11:06:07', '2025-12-17 11:06:07'),
-(32, 'TXN-20251217-140581', 'Prince', 'New Hire', 'Head Office', 1, 'System', NULL, '2025-12-17 11:33:05', '2025-12-17 11:33:05'),
-(33, 'TXN-20251217-191062', 'Prince', 'New Hire', 'Head Office', 1, 'System', NULL, '2025-12-17 11:33:54', '2025-12-17 11:33:54'),
-(34, 'TXN-20251217-097549', 'Prince', 'New Hire', 'Head Office', 1, 'System', NULL, '2025-12-17 11:38:55', '2025-12-17 11:38:55'),
-(35, 'TXN-20251217-193125', 'Prince', 'New Hire', 'Head Office', 1, 'System', NULL, '2025-12-17 11:42:30', '2025-12-17 11:42:30'),
-(36, 'TXN-20251217-674210', 'Prince', 'New Hire', 'Head Office', 1, 'System', NULL, '2025-12-17 11:43:06', '2025-12-17 11:43:06'),
-(37, 'TXN-20251217-851488', 'Prince', 'New Hire', 'Head Office', 1, 'System', NULL, '2025-12-17 11:43:50', '2025-12-17 11:43:50'),
-(38, 'TXN-20251217-099092', 'Prince', 'New Hire', 'Head Office', 1, 'System', NULL, '2025-12-17 11:45:22', '2025-12-17 11:45:22'),
-(39, 'TXN-20251217-375002', 'Prince', 'New Hire', 'Head Office', 1, 'System', NULL, '2025-12-17 11:46:53', '2025-12-17 11:46:53'),
-(40, 'TXN-20251217-806757', 'Prince', 'New Hire', 'Head Office', 1, 'System', NULL, '2025-12-17 11:49:09', '2025-12-17 11:49:09'),
-(41, 'TXN-20251217-760492', 'Prince', 'New Hire', 'Distribution Center', 1, 'System', NULL, '2025-12-17 11:49:32', '2025-12-17 11:49:32'),
-(42, 'TXN-20251217-668847', 'Prince', 'New Hire', 'Head Office', 1, 'System', NULL, '2025-12-17 12:01:06', '2025-12-17 12:01:06'),
-(43, 'TXN-20251217-231161', 'Prince', 'New Hire', 'Head Office', 1, 'System', NULL, '2025-12-17 13:41:51', '2025-12-17 13:41:51'),
-(44, 'TXN-20251217-580976', 'Prince', 'New Hire', 'Head Office', 2, 'System', NULL, '2025-12-17 14:07:56', '2025-12-17 14:07:56'),
-(45, 'TXN-20251217-486713', 'Prince', 'New Hire', 'Head Office', 1, 'System', NULL, '2025-12-17 14:08:30', '2025-12-17 14:08:30'),
-(46, 'TXN-20251217-182631', 'Prince', 'Additional', 'Head Office', 3, 'System', NULL, '2025-12-17 14:58:04', '2025-12-17 14:58:04'),
-(47, 'TXN-20251217-360325', 'Norman Madrid', 'New Hire', 'Head Office', 9, 'System', NULL, '2025-12-17 15:09:38', '2025-12-17 15:09:38'),
-(48, 'TXN-20251217-227937', 'Prince', 'New Hire', 'Head Office', 2, 'System', NULL, '2025-12-17 16:34:53', '2025-12-17 16:34:53'),
-(50, 'TXN-20251222-252323', 'prince', 'New Hire', 'Head Office', 1, 'Prince Roi Ocdamia', '00-0002', '2025-12-22 16:58:56', '2025-12-22 16:58:56'),
-(52, 'TXN-20251223-921725', 'ROI', 'New Hire', 'Head Office', 6, 'Prince Roi Ocdamia', '00-0001', '2025-12-23 08:50:40', '2025-12-23 08:50:40'),
-(56, 'TXN-20251223-555855', 'PRINCE ROI', 'New Hire', 'Head Office', 15, 'First Name Last Name', 'username', '2025-12-23 14:27:00', '2025-12-23 14:27:00');
+(57, 'TXN-20251223-497346', 'sample', 'New Hire', 'Head Office', 2, 'First Name Last Name', 'username', '2025-12-23 15:00:17', '2025-12-23 15:00:17');
 
 -- --------------------------------------------------------
 
@@ -286,8 +176,7 @@ CREATE TABLE `items` (
 --
 
 INSERT INTO `items` (`id`, `item_code`, `image_path`, `item_name`, `category`, `size`, `description`, `quantity`, `min_stock`, `created_at`, `updated_at`) VALUES
-(7, 'S-AB-T-SHIRT', 'item_6949e5ec6e7d65.37918853.jpg', 'SMALL AQUA BLUE T-SHIRT', 'T-Shirt', 'S', '', 126, 0, '2025-12-11 01:57:21', '2025-12-23 06:27:00'),
-(21, 'Medium-AB-T-SHIRT', 'item_694a214fc0eeb9.04727999.jpg', 'Medium Aqua Blue T-Shirt', 'T-Shirt', 'M', '', 100, 0, '2025-12-23 04:57:16', '2025-12-23 06:34:32');
+(22, 'S-B-T-Shirt', 'item_694a3db0d515f4.27128345.jpg', 'Small Blue T-Shirt', 'T-Shirt', 'S', '', 98, 0, '2025-12-23 06:58:56', '2025-12-23 07:00:17');
 
 -- --------------------------------------------------------
 
@@ -468,7 +357,6 @@ CREATE TABLE `users` (
 
 INSERT INTO `users` (`id`, `user_id`, `first_name`, `last_name`, `email`, `password`, `role_id`, `department_id`, `status`, `last_login`, `created_at`, `updated_at`) VALUES
 (28, '00-0000', 'Prince Roi', 'Ocdamia', 'prince.stronglink@gmail.com', '$2y$10$xWsrs29cqMSZYVgDl5qkhupvtk7FKJbHC1pu8agqBc8McVPltqPIW', 1, 1, 'Active', '2025-12-23 14:44:54', '2025-12-23 01:02:00', '2025-12-23 06:44:54'),
-(31, '00-0001', 'Airaleen', 'Montoya', 'airaleen.montoya@stronglinkservices.net', '$2y$10$Wf1qLUyWFof7DfSEvFt.1O.UJaauoSg9qnJaWS6goHQw0BYqQ83/y', 7, 2, 'Active', '2025-12-23 14:41:31', '2025-12-23 06:41:23', '2025-12-23 06:41:31'),
 (32, 'username', 'First Name', 'Last Name', 'email@gmail.com', '$2y$10$SpzyZULkZB.KjfgIe/EfUO2Qajb6FSYm.VC350r91gnXTtmrsdCY.', 2, 2, 'Active', '2025-12-23 14:47:54', '2025-12-23 06:42:40', '2025-12-23 06:47:54');
 
 -- --------------------------------------------------------
@@ -505,15 +393,6 @@ INSERT INTO `user_permissions` (`id`, `user_id`, `page_name`, `can_view`, `can_a
 (96, 28, 'reports', 1, 1, 1, 1, 1, '2025-12-23 06:23:44', '2025-12-23 06:23:44'),
 (97, 28, 'history', 1, 1, 1, 1, 1, '2025-12-23 06:23:44', '2025-12-23 06:23:44'),
 (98, 28, 'settings', 1, 1, 1, 1, 1, '2025-12-23 06:23:44', '2025-12-23 06:23:44'),
-(108, 31, 'dashboard', 1, 1, 1, 1, 0, '2025-12-23 06:41:23', '2025-12-23 06:41:23'),
-(109, 31, 'deliveries', 1, 1, 1, 1, 0, '2025-12-23 06:41:23', '2025-12-23 06:41:23'),
-(110, 31, 'history', 0, 0, 0, 0, 0, '2025-12-23 06:41:23', '2025-12-23 06:41:23'),
-(111, 31, 'inventory', 1, 1, 1, 1, 0, '2025-12-23 06:41:23', '2025-12-23 06:41:23'),
-(112, 31, 'issuance', 1, 1, 1, 1, 0, '2025-12-23 06:41:23', '2025-12-23 06:41:23'),
-(113, 31, 'pos', 1, 1, 1, 1, 0, '2025-12-23 06:41:23', '2025-12-23 06:41:23'),
-(114, 31, 'reports', 0, 0, 0, 0, 0, '2025-12-23 06:41:23', '2025-12-23 06:41:23'),
-(115, 31, 'settings', 0, 0, 0, 0, 0, '2025-12-23 06:41:23', '2025-12-23 06:41:23'),
-(116, 31, 'users', 0, 0, 0, 0, 0, '2025-12-23 06:41:23', '2025-12-23 06:41:23'),
 (134, 32, 'dashboard', 1, 1, 1, 1, 0, '2025-12-23 06:44:37', '2025-12-23 06:44:37'),
 (135, 32, 'deliveries', 1, 1, 1, 1, 0, '2025-12-23 06:44:37', '2025-12-23 06:44:37'),
 (136, 32, 'history', 1, 1, 1, 1, 0, '2025-12-23 06:44:37', '2025-12-23 06:44:37'),
@@ -641,13 +520,13 @@ ALTER TABLE `user_permissions`
 -- AUTO_INCREMENT for table `deliveries`
 --
 ALTER TABLE `deliveries`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `delivery_history`
 --
 ALTER TABLE `delivery_history`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=11;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
 
 --
 -- AUTO_INCREMENT for table `departments`
@@ -659,19 +538,19 @@ ALTER TABLE `departments`
 -- AUTO_INCREMENT for table `issuance_items`
 --
 ALTER TABLE `issuance_items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=59;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=60;
 
 --
 -- AUTO_INCREMENT for table `issuance_transactions`
 --
 ALTER TABLE `issuance_transactions`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=57;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58;
 
 --
 -- AUTO_INCREMENT for table `items`
 --
 ALTER TABLE `items`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=23;
 
 --
 -- AUTO_INCREMENT for table `layouts`
