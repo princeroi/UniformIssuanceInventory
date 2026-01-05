@@ -1,23 +1,126 @@
-// pos.js - Updated with Error Modal UI
+// pos.js - Updated with Dynamic Sites and Issuance Types from Database
 
-// Initialize when page loads
 window.init_pos = function() {
     console.log('Initializing POS...');
     loadProducts();
+    loadIssuanceTypes();
+    loadSites(); // NEW: Load sites from database
     setupSearch();
     setupCategories();
     initializeCart();
 };
 
-// Cart state
 let cart = [];
 
-// Initialize cart
 function initializeCart() {
     updateCartDisplay();
 }
 
-// Load all products
+// NEW: Load sites from database
+function loadSites() {
+    const siteSelect = document.getElementById('siteAssigned');
+    
+    if (!siteSelect) {
+        console.error('Site select not found!');
+        return;
+    }
+    
+    siteSelect.innerHTML = '<option value="">Loading...</option>';
+    siteSelect.disabled = true;
+    
+    fetch('controller/pos.php?action=getSites')
+        .then(response => response.json())
+        .then(result => {
+            if (result.success && result.data) {
+                siteSelect.innerHTML = '';
+                
+                if (result.data.length === 0) {
+                    siteSelect.innerHTML = '<option value="">No sites available</option>';
+                    showErrorModal('Configuration Error', 'No sites found in database. Please contact administrator.', 'warning');
+                } else {
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = 'Select site...';
+                    siteSelect.appendChild(defaultOption);
+                    
+                    result.data.forEach(site => {
+                        const option = document.createElement('option');
+                        option.value = site.site_name;
+                        option.textContent = site.site_name;
+                        
+                        // Add tooltip with location if available
+                        if (site.location) {
+                            option.title = site.location;
+                        }
+                        
+                        siteSelect.appendChild(option);
+                    });
+                }
+                
+                siteSelect.disabled = false;
+            } else {
+                siteSelect.innerHTML = '<option value="">Error loading sites</option>';
+                showErrorModal('Load Error', result.message || 'Failed to load sites', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading sites:', error);
+            siteSelect.innerHTML = '<option value="">Error loading sites</option>';
+            showErrorModal('Network Error', 'Unable to load sites. Please check your connection.', 'danger');
+        });
+}
+
+// Load issuance types from database
+function loadIssuanceTypes() {
+    const issuanceTypeSelect = document.getElementById('issuanceType');
+    
+    if (!issuanceTypeSelect) {
+        console.error('Issuance type select not found!');
+        return;
+    }
+    
+    issuanceTypeSelect.innerHTML = '<option value="">Loading...</option>';
+    issuanceTypeSelect.disabled = true;
+    
+    fetch('controller/pos.php?action=getIssuanceTypes')
+        .then(response => response.json())
+        .then(result => {
+            if (result.success && result.data) {
+                issuanceTypeSelect.innerHTML = '';
+                
+                if (result.data.length === 0) {
+                    issuanceTypeSelect.innerHTML = '<option value="">No issuance types available</option>';
+                    showErrorModal('Configuration Error', 'No issuance types found in database. Please contact administrator.', 'warning');
+                } else {
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = 'Select issuance type...';
+                    issuanceTypeSelect.appendChild(defaultOption);
+                    
+                    result.data.forEach(type => {
+                        const option = document.createElement('option');
+                        option.value = type.type_name;
+                        option.textContent = type.type_name;
+                        if (type.description) {
+                            option.title = type.description;
+                        }
+                        issuanceTypeSelect.appendChild(option);
+                    });
+                }
+                
+                issuanceTypeSelect.disabled = false;
+            } else {
+                issuanceTypeSelect.innerHTML = '<option value="">Error loading types</option>';
+                showErrorModal('Load Error', result.message || 'Failed to load issuance types', 'danger');
+            }
+        })
+        .catch(error => {
+            console.error('Error loading issuance types:', error);
+            issuanceTypeSelect.innerHTML = '<option value="">Error loading types</option>';
+            showErrorModal('Network Error', 'Unable to load issuance types. Please check your connection.', 'danger');
+        });
+}
+
 function loadProducts() {
     const container = document.getElementById('productsContainer');
     
@@ -63,7 +166,6 @@ function loadProducts() {
         });
 }
 
-// Display products
 function displayProducts(products) {
     const container = document.getElementById('productsContainer');
     
@@ -131,7 +233,6 @@ function displayProducts(products) {
     }).join('');
 }
 
-// Setup search
 function setupSearch() {
     const searchInput = document.getElementById('searchInput');
     if (!searchInput) return;
@@ -156,7 +257,6 @@ function setupSearch() {
     });
 }
 
-// Setup category buttons
 function setupCategories() {
     const categoryButtons = document.querySelectorAll('.category-btn');
     
@@ -189,7 +289,6 @@ function setupCategories() {
     });
 }
 
-// Escape HTML
 function escapeHtml(text) {
     if (!text) return '';
     const div = document.createElement('div');
@@ -197,28 +296,16 @@ function escapeHtml(text) {
     return div.innerHTML;
 }
 
-// Show error modal
 function showErrorModal(title, message, type = 'danger') {
-    const iconMap = {
-        danger: 'fa-exclamation-circle',
-        warning: 'fa-exclamation-triangle',
-        info: 'fa-info-circle'
-    };
-    
-    const colorMap = {
-        danger: 'bg-danger',
-        warning: 'bg-warning',
-        info: 'bg-info'
-    };
+    const iconMap = {danger: 'fa-exclamation-circle', warning: 'fa-exclamation-triangle', info: 'fa-info-circle'};
+    const colorMap = {danger: 'bg-danger', warning: 'bg-warning', info: 'bg-info'};
     
     const modalHtml = `
         <div class="modal fade" id="errorModal" tabindex="-1" data-bs-backdrop="static">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
                     <div class="modal-header ${colorMap[type]} text-white">
-                        <h5 class="modal-title">
-                            <i class="fas ${iconMap[type]} me-2"></i>${escapeHtml(title)}
-                        </h5>
+                        <h5 class="modal-title"><i class="fas ${iconMap[type]} me-2"></i>${escapeHtml(title)}</h5>
                         <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                     </div>
                     <div class="modal-body">
@@ -249,9 +336,7 @@ function showErrorModal(title, message, type = 'danger') {
     });
 }
 
-// Show add to cart modal
 function showAddToCartModal(itemCode, itemName, maxQuantity) {
-    // Check if item is out of stock
     if (maxQuantity === 0) {
         showErrorModal('Out of Stock', `${itemName} is currently out of stock. Please select another item.`, 'warning');
         return;
@@ -303,7 +388,6 @@ function showAddToCartModal(itemCode, itemName, maxQuantity) {
     });
 }
 
-// Adjust quantity in modal
 function adjustModalQuantity(change) {
     const input = document.getElementById('modalQuantity');
     if (!input) return;
@@ -318,7 +402,6 @@ function adjustModalQuantity(change) {
     }
 }
 
-// Add item to cart
 function addToCart(itemCode, itemName, maxQuantity) {
     const quantityInput = document.getElementById('modalQuantity');
     const quantity = parseInt(quantityInput?.value) || 1;
@@ -354,7 +437,6 @@ function addToCart(itemCode, itemName, maxQuantity) {
     showToast(`${itemName} (${quantity}) added to cart`, 'success');
 }
 
-// Update cart display
 function updateCartDisplay() {
     const cartContainer = document.getElementById('cartItems');
     const totalItemsEl = document.getElementById('totalItems');
@@ -404,7 +486,6 @@ function updateCartDisplay() {
     `).join('');
 }
 
-// Update cart item quantity
 function updateCartQuantity(index, change) {
     if (index < 0 || index >= cart.length) return;
     
@@ -424,7 +505,6 @@ function updateCartQuantity(index, change) {
     updateCartDisplay();
 }
 
-// Remove item from cart
 function removeFromCart(index) {
     if (index < 0 || index >= cart.length) return;
     
@@ -434,7 +514,6 @@ function removeFromCart(index) {
     showToast(`${itemName} removed from cart`, 'info');
 }
 
-// Clear cart
 function clearCart() {
     if (cart.length === 0) return;
     
@@ -445,7 +524,6 @@ function clearCart() {
     }
 }
 
-// Show confirmation modal
 function showConfirmationModal() {
     if (cart.length === 0) {
         showErrorModal('Empty Cart', 'Your cart is empty. Please add items before completing transaction.', 'warning');
@@ -455,7 +533,8 @@ function showConfirmationModal() {
     const employeeName = document.getElementById('employeeName')?.value.trim();
     const siteAssignedEl = document.getElementById('siteAssigned');
     const siteAssigned = siteAssignedEl?.value || '';
-    const issuanceType = document.getElementById('issuanceType')?.value;
+    const issuanceTypeEl = document.getElementById('issuanceType');
+    const issuanceType = issuanceTypeEl?.value || '';
     
     if (!employeeName) {
         showErrorModal('Missing Information', 'Please enter employee name before completing transaction.', 'warning');
@@ -466,6 +545,12 @@ function showConfirmationModal() {
     if (!siteAssigned || siteAssigned === '') {
         showErrorModal('Missing Information', 'Please select site assigned before completing transaction.', 'warning');
         if (siteAssignedEl) siteAssignedEl.focus();
+        return;
+    }
+    
+    if (!issuanceType || issuanceType === '') {
+        showErrorModal('Missing Information', 'Please select issuance type before completing transaction.', 'warning');
+        if (issuanceTypeEl) issuanceTypeEl.focus();
         return;
     }
     
@@ -541,7 +626,6 @@ function showConfirmationModal() {
     });
 }
 
-// Complete transaction
 function completeTransaction() {
     const employeeName = document.getElementById('employeeName')?.value.trim();
     const siteAssignedEl = document.getElementById('siteAssigned');
@@ -595,7 +679,6 @@ function completeTransaction() {
     });
 }
 
-// Show loading modal
 function showLoadingModal() {
     const modalHtml = `
         <div class="modal fade" id="loadingModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
@@ -617,7 +700,6 @@ function showLoadingModal() {
     modal.show();
 }
 
-// Hide loading modal
 function hideLoadingModal() {
     const modalEl = document.getElementById('loadingModal');
     if (modalEl) {
@@ -627,7 +709,6 @@ function hideLoadingModal() {
     }
 }
 
-// Show receipt modal
 function showReceiptModal(result, employeeName, siteAssigned, issuanceType) {
     const transactionDate = new Date().toLocaleString();
     const itemsHtml = cart.map((item, index) => `
@@ -725,7 +806,6 @@ function showReceiptModal(result, employeeName, siteAssigned, issuanceType) {
     });
 }
 
-// Preview receipt
 function previewReceipt() {
     const receipt = document.getElementById('receiptPrint');
     if (!receipt) return;
@@ -762,7 +842,6 @@ function previewReceipt() {
     previewWindow.focus();
 }
 
-// Print receipt
 function printReceipt() {
     const receipt = document.getElementById('receiptPrint');
     if (!receipt) return;
@@ -805,7 +884,6 @@ function printReceipt() {
     printWindow.close();
 }
 
-// Simple toast notification
 function showToast(message, type='info') {
     const colors = {success:'#28a745', warning:'#ffc107', info:'#17a2b8', danger:'#dc3545'};
     const toast = document.createElement('div');
@@ -818,7 +896,6 @@ function showToast(message, type='info') {
     }, 3000);
 }
 
-// Auto-initialize
 if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init_pos);
 } else {

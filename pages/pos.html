@@ -1,15 +1,16 @@
+<!-- Point of Sale Page with Dynamic Sites and Issuance Types -->
 <script>
     // Protection for individual page files
     (function() {
         const isLoggedIn = sessionStorage.getItem('isLoggedIn');
         
         if (!isLoggedIn || isLoggedIn !== 'true') {
-            // If accessed directly, redirect to login
             window.location.href = '../pages/login.html';
             throw new Error('Not authenticated');
         }
     })();
 </script>
+
 <div class="page-header">
     <h1 class="page-title">Point of Sale</h1>
     <p class="page-subtitle">Process uniform sales and transactions</p>
@@ -44,8 +45,8 @@
                             <button type="button" class="btn btn-outline-primary category-btn" data-category="T-Shirt">
                                 <i class="fas fa-tshirt me-1"></i> T-Shirt
                             </button>
-                            <button type="button" class="btn btn-outline-primary category-btn" data-category="Long Sleeve">
-                                <i class="fas fa-tshirt me-1"></i> Long Sleeve
+                            <button type="button" class="btn btn-outline-primary category-btn" data-category="Longsleeve">
+                                <i class="fas fa-tshirt me-1"></i> Longsleeve
                             </button>
                             <button type="button" class="btn btn-outline-primary category-btn" data-category="Pants">
                                 <i class="fas fa-user-tie me-1"></i> Pants
@@ -59,7 +60,6 @@
             </div>
             <div class="card-body" style="max-height: 600px; overflow-y: auto;">
                 <div class="row g-3" id="productsContainer">
-                    <!-- Products will be loaded here dynamically -->
                     <div class="col-12 text-center">
                         <div class="spinner-border text-primary" role="status">
                             <span class="visually-hidden">Loading...</span>
@@ -85,17 +85,11 @@
                            placeholder="Enter employee name" required>
                 </div>
                 
-                <!-- Site Assigned -->
+                <!-- Site Assigned - NOW DYNAMICALLY LOADED -->
                 <div class="mb-3">
                     <label class="form-label fw-semibold">Site Assigned</label>
                     <select class="form-select" id="siteAssigned" required>
-                        <option value="">Select site...</option>
-                        <option value="Head Office">Head Office</option>
-                        <option value="Branch A">Branch A</option>
-                        <option value="Branch B">Branch B</option>
-                        <option value="Warehouse 1">Warehouse 1</option>
-                        <option value="Warehouse 2">Warehouse 2</option>
-                        <option value="Distribution Center">Distribution Center</option>
+                        <option value="">Loading...</option>
                     </select>
                 </div>
                 
@@ -114,13 +108,11 @@
                         <h6 class="text-primary" id="totalItems">0</h6>
                     </div>
                     
-                    <!-- Issuance Type -->
+                    <!-- Issuance Type - DYNAMICALLY LOADED -->
                     <div class="mb-3">
                         <label class="form-label fw-semibold">Issuance Type</label>
-                        <select class="form-select" id="issuanceType">
-                            <option>New Hire</option>
-                            <option>Additional</option>
-                            <option>Annual Issuance</option>
+                        <select class="form-select" id="issuanceType" required>
+                            <option value="">Loading...</option>
                         </select>
                     </div>
                     
@@ -159,7 +151,6 @@
         box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15) !important;
     }
     
-    /* Out of Stock Styling */
     .product-card.out-of-stock {
         opacity: 0.6;
         cursor: not-allowed;

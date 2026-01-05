@@ -89,12 +89,12 @@
         </div>
     </div>
 
-    <!-- Sites Section (Coming Soon) -->
+    <!-- Sites Section -->
     <div class="col-12">
         <div class="card shadow-sm">
             <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="fas fa-map-marker-alt me-2"></i> Sites/Assigned At Management</h5>
-                <button class="btn btn-dark btn-sm" onclick="showAddSettingsModal('sites')" disabled>
+                <button class="btn btn-dark btn-sm" onclick="showAddSettingsModal('sites')">
                     <i class="fas fa-plus me-1"></i> Add Site
                 </button>
             </div>
@@ -126,13 +126,13 @@
         </div>
     </div>
 
-    <!-- Status Section (Coming Soon) -->
+    <!-- Issuance Types Section -->
     <div class="col-12">
         <div class="card shadow-sm">
             <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
-                <h5 class="mb-0"><i class="fas fa-toggle-on me-2"></i> Status Management</h5>
-                <button class="btn btn-light btn-sm" onclick="showAddSettingsModal('status')" disabled>
-                    <i class="fas fa-plus me-1"></i> Add Status
+                <h5 class="mb-0"><i class="fas fa-tags me-2"></i> Issuance Types Management</h5>
+                <button class="btn btn-light btn-sm" onclick="showAddSettingsModal('issuance_types')">
+                    <i class="fas fa-plus me-1"></i> Add Issuance Type
                 </button>
             </div>
             <div class="card-body">
@@ -141,19 +141,20 @@
                         <thead class="table-light">
                             <tr>
                                 <th style="width: 60px;">ID</th>
-                                <th>Status Name</th>
-                                <th style="width: 100px;">Color</th>
+                                <th style="width: 200px;">Type Name</th>
+                                <th>Description</th>
+                                <th style="width: 100px;" class="text-center">Status</th>
                                 <th style="width: 180px;">Created At</th>
                                 <th style="width: 120px;" class="text-center">Actions</th>
                             </tr>
                         </thead>
-                        <tbody id="statusTableBody">
+                        <tbody id="issuance_typesTableBody">
                             <tr>
-                                <td colspan="5" class="text-center py-4">
+                                <td colspan="6" class="text-center py-4">
                                     <div class="spinner-border spinner-border-sm text-primary" role="status">
                                         <span class="visually-hidden">Loading...</span>
                                     </div>
-                                    <p class="mt-2 mb-0">Loading status...</p>
+                                    <p class="mt-2 mb-0">Loading issuance types...</p>
                                 </td>
                             </tr>
                         </tbody>
@@ -162,9 +163,48 @@
             </div>
         </div>
     </div>
+
+    <!-- System Logo Section -->
+    <div class="col-12">
+        <div class="card shadow-sm">
+            <div class="card-header bg-secondary text-white">
+                <h5 class="mb-0">
+                    <i class="fas fa-image me-2"></i> System Logo
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="row align-items-center">
+                    <div class="col-md-4 text-center">
+                        <div class="border rounded p-3 bg-light">
+                            <img id="logoPreview"
+                                    src="https://via.placeholder.com/180x80?text=No+Logo"
+                                    class="img-fluid"
+                                    style="max-height:80px;">
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <input type="file"
+                                class="form-control"
+                                accept="image/*"
+                                onchange="previewLogo(this)">
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <div class="d-flex justify-content-center gap-2">
+                    <button class="btn btn-primary" id="saveLogoBtn" onclick="saveLogo()">
+                        <i class="fas fa-save me-1"></i> Save Logo
+                    </button>
+                    <button class="btn btn-outline-danger" onclick="removeLogo()">
+                        <i class="fas fa-trash me-1"></i> Remove
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
-<!-- Modal for Add/Edit Role/Department -->
+<!-- Modal for Add/Edit -->
 <div class="modal fade" id="dataModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content">
@@ -353,7 +393,6 @@
 </style>
 
 <script>
-
     // Initialize Settings when page loads
     document.addEventListener('DOMContentLoaded', function() {
         if (typeof init_settings === 'function') {

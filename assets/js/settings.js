@@ -657,6 +657,54 @@ function showSettingsToast(message, type = 'info') {
     }, 3000);
 }
 
+    const LOGO_STORAGE_KEY = 'system_logo';
+
+    function previewLogo(input) {
+        if (!input.files || !input.files[0]) return;
+
+        const file = input.files[0];
+
+        // Optional size limit (2MB)
+        if (file.size > 2 * 1024 * 1024) {
+            alert('Logo must be less than 2MB');
+            input.value = '';
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = e => {
+            document.getElementById('logoPreview').src = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    function saveLogo() {
+        const img = document.getElementById('logoPreview');
+        if (!img || img.src.includes('placeholder.com')) {
+            alert('Please select a logo first');
+            return;
+        }
+
+        localStorage.setItem(LOGO_STORAGE_KEY, img.src);
+        alert('Logo saved successfully!');
+    }
+
+    function removeLogo() {
+        localStorage.removeItem(LOGO_STORAGE_KEY);
+        document.getElementById('logoPreview').src =
+            'https://via.placeholder.com/180x80?text=No+Logo';
+        alert('Logo removed');
+    }
+
+    // Load saved logo on page load
+    document.addEventListener('DOMContentLoaded', () => {
+        const savedLogo = localStorage.getItem(LOGO_STORAGE_KEY);
+        if (savedLogo) {
+            document.getElementById('logoPreview').src = savedLogo;
+        }
+    });
+
+
 // Make functions globally accessible
 window.showAddSettingsModal = showAddSettingsModal;
 window.editSettingsItem = editSettingsItem;

@@ -1,7 +1,7 @@
 <?php
-// pos.php - Updated to track both user_id and name
+// pos.php - Updated with Dynamic Sites and Issuance Types from Database
 require_once 'config.php';
-session_start(); // Add session support
+session_start();
 
 header('Content-Type: application/json');
 
@@ -10,7 +10,46 @@ try {
     
     $action = $_GET['action'] ?? $_POST['action'] ?? '';
     
-    if ($action === 'getItems') {
+    if ($action === 'getIssuanceTypes') {
+        // Get all active issuance types
+        $stmt = $pdo->query("
+            SELECT 
+                id,
+                type_name,
+                description
+            FROM issuance_types 
+            WHERE is_active = 1
+            ORDER BY type_name ASC
+        ");
+        
+        $types = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Issuance types retrieved successfully',
+            'data' => $types
+        ]);
+        
+    } elseif ($action === 'getSites') {
+        // NEW: Get all sites
+        $stmt = $pdo->query("
+            SELECT 
+                id,
+                site_name,
+                location
+            FROM sites 
+            ORDER BY site_name ASC
+        ");
+        
+        $sites = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Sites retrieved successfully',
+            'data' => $sites
+        ]);
+        
+    } elseif ($action === 'getItems') {
         $checkStmt = $pdo->query("SELECT COUNT(*) as total FROM items");
         $totalCount = $checkStmt->fetch(PDO::FETCH_ASSOC);
         
@@ -149,17 +188,14 @@ try {
         ]);
         
     } elseif ($action === 'completeTransaction') {
-        // Get POST data
         $employeeName = $_POST['employee_name'] ?? '';
         $siteAssigned = $_POST['site_assigned'] ?? '';
         $issuanceType = $_POST['issuance_type'] ?? '';
         $itemsJson = $_POST['items'] ?? '';
         
-        // GET BOTH USER_ID AND NAME FROM SESSION
         $issuedByUserId = $_SESSION['user_id'] ?? null;
         $issuedByName = $_SESSION['name'] ?? 'Unknown User';
         
-        // Validate input
         if (empty($employeeName)) {
             echo json_encode([
                 'success' => false,
@@ -172,6 +208,14 @@ try {
             echo json_encode([
                 'success' => false,
                 'message' => 'Site assigned is required'
+            ]);
+            exit;
+        }
+        
+        if (empty($issuanceType)) {
+            echo json_encode([
+                'success' => false,
+                'message' => 'Issuance type is required'
             ]);
             exit;
         }
@@ -202,17 +246,14 @@ try {
             exit;
         }
         
-        // Begin transaction
         $pdo->beginTransaction();
         
         try {
-            // Calculate total items
             $totalItems = 0;
             foreach ($cartItems as $item) {
                 $totalItems += $item['quantity'];
             }
             
-            // Generate unique transaction ID
             $transactionId = 'TXN-' . date('Ymd') . '-' . str_pad(rand(1, 999999), 6, '0', STR_PAD_LEFT);
             
             $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM issuance_transactions WHERE transaction_id = ?");
@@ -223,7 +264,6 @@ try {
                 $checkStmt->execute([$transactionId]);
             }
             
-            // Insert into issuance_transactions table with BOTH user_id and name
             $stmt = $pdo->prepare("
                 INSERT INTO issuance_transactions 
                 (transaction_id, employee_name, issuance_type, site_assigned, total_items, issued_by, issued_by_id, issuance_date) 
@@ -236,11 +276,10 @@ try {
                 $issuanceType,
                 $siteAssigned,
                 $totalItems,
-                $issuedByName,      // Store name for display
-                $issuedByUserId     // Store user_id for filtering
+                $issuedByName,
+                $issuedByUserId
             ]);
             
-            // Insert issuance items and deduct quantities
             $stmtDetail = $pdo->prepare("
                 INSERT INTO issuance_items 
                 (transaction_id, item_code, item_name, category, size, site_assigned, quantity) 
@@ -262,7 +301,6 @@ try {
                 $itemName = $item['item_name'];
                 $quantity = $item['quantity'];
                 
-                // Check current stock
                 $stmtCheck->execute([$itemCode]);
                 $currentItem = $stmtCheck->fetch(PDO::FETCH_ASSOC);
                 
@@ -274,7 +312,6 @@ try {
                     throw new Exception("Insufficient stock for {$itemName}. Available: {$currentItem['quantity']}, Requested: {$quantity}");
                 }
                 
-                // Insert detail record
                 $stmtDetail->execute([
                     $transactionId,
                     $itemCode,
@@ -285,14 +322,12 @@ try {
                     $quantity
                 ]);
                 
-                // Deduct from items table
                 $stmtUpdate->execute([
                     $quantity,
                     $itemCode
                 ]);
             }
             
-            // Commit transaction
             $pdo->commit();
             
             echo json_encode([

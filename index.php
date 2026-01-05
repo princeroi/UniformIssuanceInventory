@@ -213,7 +213,7 @@ $userRole = isset($_SESSION['role_name']) ? $_SESSION['role_name'] : '';
         <div class="sidebar-header">
             <a href="#" class="sidebar-brand">
                 <i class="fas fa-box"></i>
-                <span>UIIS</span>
+                <span>UIS</span>
             </a>
         </div>
         
