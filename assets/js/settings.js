@@ -49,7 +49,26 @@ window.init_settings = function() {
     loadSettingsData('departments');
     loadSettingsData('sites');
     loadSettingsData('issuance_types');
+    
+    // Load logo
+    loadLogo();
 };
+
+// ==================== PAGE DEFINITIONS ====================
+
+// const AVAILABLE_PAGES = [
+//     { name: 'dashboard', label: 'Dashboard', icon: 'fa-tachometer-alt' },
+//     { name: 'users', label: 'Users', icon: 'fa-users' },
+//     { name: 'pos', label: 'POS', icon: 'fa-cash-register' },
+//     { name: 'inventory', label: 'Inventory', icon: 'fa-boxes' },
+//     { name: 'issuance', label: 'Issuance', icon: 'fa-hand-holding' },
+//     { name: 'deliveries', label: 'Deliveries', icon: 'fa-truck' },
+//     { name: 'reports', label: 'Reports', icon: 'fa-chart-bar' },
+//     { name: 'history', label: 'History', icon: 'fa-history' },
+//     { name: 'settings', label: 'Settings', icon: 'fa-cog' }
+// ];
+
+// ==================== DATA LOADING ====================
 
 async function loadSettingsData(section) {
     const tbody = document.getElementById(`${section}TableBody`);
@@ -229,7 +248,7 @@ async function toggleSiteStatus(id) {
             loadSettingsData('sites');
         } else {
             showSettingsToast(result.message, 'danger');
-            loadSettingsData('sites'); // Reload to reset toggle
+            loadSettingsData('sites');
         }
         
     } catch (error) {
@@ -252,7 +271,6 @@ async function managePermissions(roleId, roleName) {
     const tbody = document.getElementById('permissionsTableBody');
     if (!tbody) return;
     
-    // Show loading
     tbody.innerHTML = `<tr><td colspan="5" class="text-center py-3">
         <div class="spinner-border spinner-border-sm text-primary" role="status">
             <span class="visually-hidden">Loading permissions...</span>
@@ -288,7 +306,6 @@ async function managePermissions(roleId, roleName) {
             });
         }
         
-        // Render permissions table
         tbody.innerHTML = '';
         AVAILABLE_PAGES.forEach(page => {
             const perm = permissions[page.name] || {
@@ -353,7 +370,6 @@ function updatePermissionCheckboxes(viewCheckbox) {
     const page = viewCheckbox.getAttribute('data-page');
     const isChecked = viewCheckbox.checked;
     
-    // If view is unchecked, uncheck all other permissions for this page
     if (!isChecked) {
         const allCheckboxes = document.querySelectorAll(`input[data-page="${page}"]`);
         allCheckboxes.forEach(cb => {
@@ -427,7 +443,7 @@ async function savePermissions() {
     }
 }
 
-// ==================== ROLE/DEPARTMENT/SITE/ISSUANCE TYPE CRUD ====================
+// ==================== CRUD OPERATIONS ====================
 
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
@@ -782,12 +798,141 @@ async function confirmDelete() {
     }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
-    if (confirmDeleteBtn) {
-        confirmDeleteBtn.addEventListener('click', confirmDelete);
+// ==================== LOGO MANAGEMENT ====================
+
+async function loadLogo() {
+    try {
+        const basePath = window.settingsBasePath || '';
+        const endpoint = `${basePath}/controller/settings.php?action=getLogo`;
+        
+        const response = await fetch(endpoint);
+        const result = await response.json();
+        
+        if (result.success && result.data) {
+            document.getElementById('logoPreview').src = result.data.logo;
+            document.getElementById('logoName').value = result.data.name || 'System Logo';
+        } else {
+            document.getElementById('logoPreview').src = 'https://via.placeholder.com/180x80?text=No+Logo';
+            document.getElementById('logoName').value = 'System Logo';
+        }
+        
+    } catch (error) {
+        console.error('Error loading logo:', error);
     }
-});
+}
+
+function previewLogo(input) {
+    if (!input.files || !input.files[0]) return;
+
+    const file = input.files[0];
+
+    if (!file.type.match('image.*')) {
+        showSettingsToast('Please select a valid image file', 'warning');
+        input.value = '';
+        return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+        showSettingsToast('Logo must be less than 2MB', 'warning');
+        input.value = '';
+        return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = e => {
+        document.getElementById('logoPreview').src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+async function saveLogo() {
+    const img = document.getElementById('logoPreview');
+    const logoName = document.getElementById('logoName').value.trim();
+    
+    if (!img || img.src.includes('placeholder.com')) {
+        showSettingsToast('Please select a logo first', 'warning');
+        return;
+    }
+
+    if (!logoName) {
+        showSettingsToast('Please enter a logo name', 'warning');
+        return;
+    }
+
+    try {
+        const basePath = window.settingsBasePath || '';
+        const endpoint = `${basePath}/controller/settings.php`;
+        
+        const formData = new FormData();
+        formData.append('action', 'saveLogo');
+        formData.append('name', logoName);
+        formData.append('logo', img.src);
+        
+        const saveBtn = document.getElementById('saveLogoBtn');
+        const originalText = saveBtn.innerHTML;
+        saveBtn.disabled = true;
+        saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i> Saving...';
+        
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showSettingsToast(result.message, 'success');
+            loadLogo();
+        } else {
+            showSettingsToast(result.message, 'danger');
+        }
+        
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalText;
+        
+    } catch (error) {
+        console.error('Error saving logo:', error);
+        showSettingsToast('Error saving logo: ' + error.message, 'danger');
+        
+        const saveBtn = document.getElementById('saveLogoBtn');
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = '<i class="fas fa-save me-1"></i> Save Logo';
+    }
+}
+
+async function removeLogo() {
+    if (!confirm('Are you sure you want to remove the logo?')) {
+        return;
+    }
+    
+    try {
+        const basePath = window.settingsBasePath || '';
+        const endpoint = `${basePath}/controller/settings.php`;
+        
+        const formData = new FormData();
+        formData.append('action', 'deleteLogo');
+        
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showSettingsToast(result.message, 'success');
+            document.getElementById('logoPreview').src = 'https://via.placeholder.com/180x80?text=No+Logo';
+            document.getElementById('logoName').value = 'System Logo';
+            document.getElementById('logoUpload').value = '';
+        } else {
+            showSettingsToast(result.message, 'danger');
+        }
+        
+    } catch (error) {
+        console.error('Error removing logo:', error);
+        showSettingsToast('Error removing logo: ' + error.message, 'danger');
+    }
+}
 
 // ==================== UTILITY FUNCTIONS ====================
 
@@ -844,54 +989,17 @@ function showSettingsToast(message, type = 'info') {
     }, 3000);
 }
 
-const LOGO_STORAGE_KEY = 'system_logo';
+// ==================== EVENT LISTENERS ====================
 
-function previewLogo(input) {
-    if (!input.files || !input.files[0]) return;
-
-    const file = input.files[0];
-
-    // Optional size limit (2MB)
-    if (file.size > 2 * 1024 * 1024) {
-        alert('Logo must be less than 2MB');
-        input.value = '';
-        return;
-    }
-
-    const reader = new FileReader();
-    reader.onload = e => {
-        document.getElementById('logoPreview').src = e.target.result;
-    };
-    reader.readAsDataURL(file);
-}
-
-function saveLogo() {
-    const img = document.getElementById('logoPreview');
-    if (!img || img.src.includes('placeholder.com')) {
-        alert('Please select a logo first');
-        return;
-    }
-
-    localStorage.setItem(LOGO_STORAGE_KEY, img.src);
-    alert('Logo saved successfully!');
-}
-
-function removeLogo() {
-    localStorage.removeItem(LOGO_STORAGE_KEY);
-    document.getElementById('logoPreview').src =
-        'https://via.placeholder.com/180x80?text=No+Logo';
-    alert('Logo removed');
-}
-
-// Load saved logo on page load
-document.addEventListener('DOMContentLoaded', () => {
-    const savedLogo = localStorage.getItem(LOGO_STORAGE_KEY);
-    if (savedLogo) {
-        document.getElementById('logoPreview').src = savedLogo;
+document.addEventListener('DOMContentLoaded', function() {
+    const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+    if (confirmDeleteBtn) {
+        confirmDeleteBtn.addEventListener('click', confirmDelete);
     }
 });
 
-// Make functions globally accessible
+// ==================== GLOBAL EXPORTS ====================
+
 window.showAddSettingsModal = showAddSettingsModal;
 window.editSettingsItem = editSettingsItem;
 window.saveSettingsData = saveSettingsData;
@@ -900,3 +1008,6 @@ window.managePermissions = managePermissions;
 window.savePermissions = savePermissions;
 window.updatePermissionCheckboxes = updatePermissionCheckboxes;
 window.toggleSiteStatus = toggleSiteStatus;
+window.previewLogo = previewLogo;
+window.saveLogo = saveLogo;
+window.removeLogo = removeLogo;

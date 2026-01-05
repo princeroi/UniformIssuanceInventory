@@ -159,6 +159,19 @@ try {
             resetUserPermissions($pdo);
             break;
             
+        // Logo Management
+        case 'getLogo':
+            getLogo($pdo);
+            break;
+            
+        case 'saveLogo':
+            saveLogo($pdo);
+            break;
+            
+        case 'deleteLogo':
+            deleteLogo($pdo);
+            break;
+            
         default:
             sendResponse(false, "Invalid action: " . $action);
             break;
@@ -1087,6 +1100,95 @@ function resetUserPermissions($pdo) {
         
     } catch (PDOException $e) {
         sendResponse(false, 'Failed to reset user permissions: ' . $e->getMessage());
+    }
+}
+
+// ==================== LOGO FUNCTIONS ====================
+
+function getLogo($pdo) {
+    try {
+        // Get the most recent logo (there should only be one)
+        $stmt = $pdo->prepare("SELECT * FROM logo ORDER BY created_at DESC LIMIT 1");
+        $stmt->execute();
+        $logo = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if ($logo) {
+            sendResponse(true, 'Logo retrieved successfully', $logo);
+        } else {
+            sendResponse(true, 'No logo found', null);
+        }
+        
+    } catch (PDOException $e) {
+        sendResponse(false, 'Failed to retrieve logo: ' . $e->getMessage());
+    }
+}
+
+function saveLogo($pdo) {
+    try {
+        $name = trim($_POST['name'] ?? 'System Logo');
+        $logoData = $_POST['logo'] ?? '';
+        
+        if (empty($logoData)) {
+            sendResponse(false, 'Logo data is required');
+        }
+        
+        // Validate base64 image
+        if (!preg_match('/^data:image\/(png|jpg|jpeg|gif|webp);base64,/', $logoData)) {
+            sendResponse(false, 'Invalid image format. Please upload a valid image.');
+        }
+        
+        // Check file size (limit to 2MB in base64)
+        $imageSize = (strlen($logoData) * 3) / 4; // Approximate decoded size
+        if ($imageSize > 2 * 1024 * 1024) {
+            sendResponse(false, 'Image is too large. Maximum size is 2MB.');
+        }
+        
+        // Start transaction
+        $pdo->beginTransaction();
+        
+        try {
+            // Delete existing logo(s)
+            $stmt = $pdo->prepare("DELETE FROM logo");
+            $stmt->execute();
+            
+            // Insert new logo
+            $stmt = $pdo->prepare("
+                INSERT INTO logo (name, logo, created_at) 
+                VALUES (?, ?, NOW())
+            ");
+            $stmt->execute([$name, $logoData]);
+            
+            $newId = $pdo->lastInsertId();
+            
+            $pdo->commit();
+            
+            // Get the newly created logo
+            $stmt = $pdo->prepare("SELECT * FROM logo WHERE id = ?");
+            $stmt->execute([$newId]);
+            $newLogo = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            sendResponse(true, 'Logo saved successfully', $newLogo);
+            
+        } catch (Exception $e) {
+            $pdo->rollBack();
+            throw $e;
+        }
+        
+    } catch (PDOException $e) {
+        sendResponse(false, 'Failed to save logo: ' . $e->getMessage());
+    }
+}
+
+function deleteLogo($pdo) {
+    try {
+        // Delete all logos
+        $stmt = $pdo->prepare("DELETE FROM logo");
+        $stmt->execute();
+        
+        sendResponse(true, 'Logo deleted successfully');
+        
+    } catch (PDOException $e) {
+        sendResponse(false, 'Failed to delete logo: ' . $e->getMessage());
     }
 }
 
