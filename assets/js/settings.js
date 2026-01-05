@@ -1,6 +1,5 @@
 // assets/js/settings.js
 
-
 // Initialize function called by main.js
 window.init_settings = function() {
     console.log('Initializing Settings page...');
@@ -38,7 +37,7 @@ window.init_settings = function() {
         roles: [],
         departments: [],
         sites: [],
-        status: []
+        issuance_types: []
     };
     
     window.currentSettingsSection = 'roles';
@@ -48,6 +47,8 @@ window.init_settings = function() {
     // Load all data initially
     loadSettingsData('roles');
     loadSettingsData('departments');
+    loadSettingsData('sites');
+    loadSettingsData('issuance_types');
 };
 
 async function loadSettingsData(section) {
@@ -57,7 +58,7 @@ async function loadSettingsData(section) {
         return;
     }
     
-    const loadingColspan = section === 'departments' ? '4' : '5';
+    const loadingColspan = section === 'departments' ? '4' : section === 'sites' ? '6' : section === 'issuance_types' ? '5' : '5';
     tbody.innerHTML = `<tr><td colspan="${loadingColspan}" class="text-center">
         <div class="spinner-border spinner-border-sm text-primary" role="status">
             <span class="visually-hidden">Loading...</span>
@@ -74,12 +75,10 @@ async function loadSettingsData(section) {
             endpoint = `${controllerPath}?action=getRoles`;
         } else if (section === 'departments') {
             endpoint = `${controllerPath}?action=getDepartments`;
-        } else {
-            tbody.innerHTML = `<tr><td colspan="5" class="text-center text-muted">
-                <i class="fas fa-info-circle fa-2x mb-2 d-block"></i>
-                ${section} section coming soon...
-            </td></tr>`;
-            return;
+        } else if (section === 'sites') {
+            endpoint = `${controllerPath}?action=getSites`;
+        } else if (section === 'issuance_types') {
+            endpoint = `${controllerPath}?action=getIssuanceTypes`;
         }
 
         console.log('Fetching from:', endpoint);
@@ -101,7 +100,7 @@ async function loadSettingsData(section) {
 
     } catch (error) {
         console.error('Error loading data:', error);
-        const errorColspan = section === 'departments' ? '4' : '5';
+        const errorColspan = section === 'departments' ? '4' : section === 'sites' ? '6' : section === 'issuance_types' ? '5' : '5';
         tbody.innerHTML = `<tr><td colspan="${errorColspan}" class="text-center text-danger">
             <i class="fas fa-exclamation-triangle fa-2x mb-2 d-block"></i>
             Error loading ${section}: ${error.message}
@@ -114,7 +113,7 @@ function renderTableData(section, tbody) {
     const data = window.settingsData[section] || [];
 
     if (data.length === 0) {
-        const colspan = section === 'departments' ? '4' : '5';
+        const colspan = section === 'departments' ? '4' : section === 'sites' ? '6' : section === 'issuance_types' ? '5' : '5';
         tbody.innerHTML = `<tr><td colspan="${colspan}" class="text-center text-muted">
             <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
             No ${section} found. Click "Add ${section.slice(0, -1)}" to create one.
@@ -160,10 +159,84 @@ function renderTableData(section, tbody) {
                     </button>
                 </td>
             `;
+        } else if (section === 'sites') {
+            row.innerHTML = `
+                <td>${item.id}</td>
+                <td><strong>${escapeHtml(item.site_name)}</strong></td>
+                <td>${escapeHtml(item.location)}</td>
+                <td class="text-center">
+                    <div class="form-check form-switch d-inline-block">
+                        <input class="form-check-input" type="checkbox" 
+                               ${item.is_active == 1 ? 'checked' : ''} 
+                               onchange="toggleSiteStatus(${item.id})"
+                               style="cursor: pointer;">
+                    </div>
+                </td>
+                <td><small class="text-muted">${formatDate(item.created_at)}</small></td>
+                <td class="text-center text-nowrap">
+                    <button class="btn btn-sm btn-warning me-1" onclick="editSettingsItem('${section}', ${item.id})" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteSettingsItem('${section}', ${item.id})" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
+        } else if (section === 'issuance_types') {
+            const desc = escapeHtml(item.description);
+            const shortDesc = desc.length > 50 ? desc.substring(0, 50) + '...' : desc;
+            
+            row.innerHTML = `
+                <td>${item.id}</td>
+                <td><strong>${escapeHtml(item.type_name)}</strong></td>
+                <td title="${desc}">${shortDesc}</td>
+                <td><small class="text-muted">${formatDate(item.created_at)}</small></td>
+                <td class="text-center text-nowrap">
+                    <button class="btn btn-sm btn-warning me-1" onclick="editSettingsItem('${section}', ${item.id})" title="Edit">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="btn btn-sm btn-danger" onclick="deleteSettingsItem('${section}', ${item.id})" title="Delete">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </td>
+            `;
         }
         
         tbody.appendChild(row);
     });
+}
+
+// ==================== TOGGLE SITE STATUS ====================
+
+async function toggleSiteStatus(id) {
+    try {
+        const basePath = window.settingsBasePath || '';
+        const endpoint = `${basePath}/controller/settings.php`;
+        
+        const formData = new FormData();
+        formData.append('action', 'toggleSiteStatus');
+        formData.append('id', id);
+        
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            body: formData
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+            showSettingsToast(result.message, 'success');
+            loadSettingsData('sites');
+        } else {
+            showSettingsToast(result.message, 'danger');
+            loadSettingsData('sites'); // Reload to reset toggle
+        }
+        
+    } catch (error) {
+        console.error('Error toggling status:', error);
+        showSettingsToast('Error toggling status: ' + error.message, 'danger');
+        loadSettingsData('sites');
+    }
 }
 
 // ==================== PERMISSIONS MANAGEMENT ====================
@@ -354,7 +427,7 @@ async function savePermissions() {
     }
 }
 
-// ==================== ROLE/DEPARTMENT CRUD ====================
+// ==================== ROLE/DEPARTMENT/SITE/ISSUANCE TYPE CRUD ====================
 
 function formatDate(dateString) {
     if (!dateString) return 'N/A';
@@ -400,6 +473,36 @@ function showAddSettingsModal(section) {
             <div class="mb-3">
                 <label class="form-label fw-bold">Department Name <span class="text-danger">*</span></label>
                 <input type="text" class="form-control" id="department_name" placeholder="e.g., Human Resources" required>
+            </div>
+        `;
+    } else if (section === 'sites') {
+        modalTitle.textContent = 'Add New Site';
+        formHtml = `
+            <div class="mb-3">
+                <label class="form-label fw-bold">Site Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="site_name" placeholder="e.g., Main Office" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Location <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="location" placeholder="e.g., Manila" required>
+            </div>
+            <div class="mb-3">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="is_active" checked>
+                    <label class="form-check-label fw-bold" for="is_active">Active</label>
+                </div>
+            </div>
+        `;
+    } else if (section === 'issuance_types') {
+        modalTitle.textContent = 'Add New Issuance Type';
+        formHtml = `
+            <div class="mb-3">
+                <label class="form-label fw-bold">Type Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="type_name" placeholder="e.g., New Hire" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Description <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="description" rows="3" placeholder="Describe the issuance type..." required></textarea>
             </div>
         `;
     } else {
@@ -453,6 +556,36 @@ function editSettingsItem(section, id) {
                 <input type="text" class="form-control" id="department_name" value="${escapeHtml(item.department_name)}" required>
             </div>
         `;
+    } else if (section === 'sites') {
+        modalTitle.textContent = 'Edit Site';
+        formHtml = `
+            <div class="mb-3">
+                <label class="form-label fw-bold">Site Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="site_name" value="${escapeHtml(item.site_name)}" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Location <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="location" value="${escapeHtml(item.location)}" required>
+            </div>
+            <div class="mb-3">
+                <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" id="is_active" ${item.is_active == 1 ? 'checked' : ''}>
+                    <label class="form-check-label fw-bold" for="is_active">Active</label>
+                </div>
+            </div>
+        `;
+    } else if (section === 'issuance_types') {
+        modalTitle.textContent = 'Edit Issuance Type';
+        formHtml = `
+            <div class="mb-3">
+                <label class="form-label fw-bold">Type Name <span class="text-danger">*</span></label>
+                <input type="text" class="form-control" id="type_name" value="${escapeHtml(item.type_name)}" required>
+            </div>
+            <div class="mb-3">
+                <label class="form-label fw-bold">Description <span class="text-danger">*</span></label>
+                <textarea class="form-control" id="description" rows="3" required>${escapeHtml(item.description)}</textarea>
+            </div>
+        `;
     }
     
     modalBody.innerHTML = formHtml;
@@ -504,6 +637,44 @@ async function saveSettingsData() {
             } else {
                 formData.append('action', 'addDepartment');
             }
+        } else if (section === 'sites') {
+            const siteName = document.getElementById('site_name')?.value.trim();
+            const location = document.getElementById('location')?.value.trim();
+            const isActive = document.getElementById('is_active')?.checked ? 1 : 0;
+            
+            if (!siteName || !location) {
+                showSettingsToast('Please fill in all required fields', 'warning');
+                return;
+            }
+            
+            formData.append('site_name', siteName);
+            formData.append('location', location);
+            formData.append('is_active', isActive);
+            
+            if (window.editingSettingsId) {
+                formData.append('action', 'updateSite');
+                formData.append('id', window.editingSettingsId);
+            } else {
+                formData.append('action', 'addSite');
+            }
+        } else if (section === 'issuance_types') {
+            const typeName = document.getElementById('type_name')?.value.trim();
+            const description = document.getElementById('description')?.value.trim();
+            
+            if (!typeName || !description) {
+                showSettingsToast('Please fill in all required fields', 'warning');
+                return;
+            }
+            
+            formData.append('type_name', typeName);
+            formData.append('description', description);
+            
+            if (window.editingSettingsId) {
+                formData.append('action', 'updateIssuanceType');
+                formData.append('id', window.editingSettingsId);
+            } else {
+                formData.append('action', 'addIssuanceType');
+            }
         }
         
         const response = await fetch(endpoint, {
@@ -531,7 +702,17 @@ async function saveSettingsData() {
 
 async function deleteSettingsItem(section, id) {
     const item = window.settingsData[section].find(i => i.id === id);
-    const itemName = section === 'roles' ? item?.role_name : item?.department_name;
+    let itemName = '';
+    
+    if (section === 'roles') {
+        itemName = item?.role_name;
+    } else if (section === 'departments') {
+        itemName = item?.department_name;
+    } else if (section === 'sites') {
+        itemName = item?.site_name;
+    } else if (section === 'issuance_types') {
+        itemName = item?.type_name;
+    }
     
     if (!item) {
         showSettingsToast('Item not found', 'danger');
@@ -540,7 +721,7 @@ async function deleteSettingsItem(section, id) {
     
     const deleteItemNameEl = document.getElementById('deleteItemName');
     if (deleteItemNameEl) {
-        const sectionLabel = section.charAt(0).toUpperCase() + section.slice(0, -1);
+        const sectionLabel = section === 'issuance_types' ? 'Issuance Type' : section.charAt(0).toUpperCase() + section.slice(0, -1);
         deleteItemNameEl.innerHTML = `<strong>${sectionLabel}:</strong> ${escapeHtml(itemName)}`;
     }
     
@@ -566,6 +747,12 @@ async function confirmDelete() {
             formData.append('id', id);
         } else if (section === 'departments') {
             formData.append('action', 'deleteDepartment');
+            formData.append('id', id);
+        } else if (section === 'sites') {
+            formData.append('action', 'deleteSite');
+            formData.append('id', id);
+        } else if (section === 'issuance_types') {
+            formData.append('action', 'deleteIssuanceType');
             formData.append('id', id);
         }
         
@@ -657,53 +844,52 @@ function showSettingsToast(message, type = 'info') {
     }, 3000);
 }
 
-    const LOGO_STORAGE_KEY = 'system_logo';
+const LOGO_STORAGE_KEY = 'system_logo';
 
-    function previewLogo(input) {
-        if (!input.files || !input.files[0]) return;
+function previewLogo(input) {
+    if (!input.files || !input.files[0]) return;
 
-        const file = input.files[0];
+    const file = input.files[0];
 
-        // Optional size limit (2MB)
-        if (file.size > 2 * 1024 * 1024) {
-            alert('Logo must be less than 2MB');
-            input.value = '';
-            return;
-        }
-
-        const reader = new FileReader();
-        reader.onload = e => {
-            document.getElementById('logoPreview').src = e.target.result;
-        };
-        reader.readAsDataURL(file);
+    // Optional size limit (2MB)
+    if (file.size > 2 * 1024 * 1024) {
+        alert('Logo must be less than 2MB');
+        input.value = '';
+        return;
     }
 
-    function saveLogo() {
-        const img = document.getElementById('logoPreview');
-        if (!img || img.src.includes('placeholder.com')) {
-            alert('Please select a logo first');
-            return;
-        }
+    const reader = new FileReader();
+    reader.onload = e => {
+        document.getElementById('logoPreview').src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+}
 
-        localStorage.setItem(LOGO_STORAGE_KEY, img.src);
-        alert('Logo saved successfully!');
+function saveLogo() {
+    const img = document.getElementById('logoPreview');
+    if (!img || img.src.includes('placeholder.com')) {
+        alert('Please select a logo first');
+        return;
     }
 
-    function removeLogo() {
-        localStorage.removeItem(LOGO_STORAGE_KEY);
-        document.getElementById('logoPreview').src =
-            'https://via.placeholder.com/180x80?text=No+Logo';
-        alert('Logo removed');
+    localStorage.setItem(LOGO_STORAGE_KEY, img.src);
+    alert('Logo saved successfully!');
+}
+
+function removeLogo() {
+    localStorage.removeItem(LOGO_STORAGE_KEY);
+    document.getElementById('logoPreview').src =
+        'https://via.placeholder.com/180x80?text=No+Logo';
+    alert('Logo removed');
+}
+
+// Load saved logo on page load
+document.addEventListener('DOMContentLoaded', () => {
+    const savedLogo = localStorage.getItem(LOGO_STORAGE_KEY);
+    if (savedLogo) {
+        document.getElementById('logoPreview').src = savedLogo;
     }
-
-    // Load saved logo on page load
-    document.addEventListener('DOMContentLoaded', () => {
-        const savedLogo = localStorage.getItem(LOGO_STORAGE_KEY);
-        if (savedLogo) {
-            document.getElementById('logoPreview').src = savedLogo;
-        }
-    });
-
+});
 
 // Make functions globally accessible
 window.showAddSettingsModal = showAddSettingsModal;
@@ -713,3 +899,4 @@ window.deleteSettingsItem = deleteSettingsItem;
 window.managePermissions = managePermissions;
 window.savePermissions = savePermissions;
 window.updatePermissionCheckboxes = updatePermissionCheckboxes;
+window.toggleSiteStatus = toggleSiteStatus;

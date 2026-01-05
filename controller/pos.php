@@ -38,6 +38,7 @@ try {
                 site_name,
                 location
             FROM sites 
+            WHERE is_active = 1
             ORDER BY site_name ASC
         ");
         

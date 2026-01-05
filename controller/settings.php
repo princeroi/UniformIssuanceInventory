@@ -99,6 +99,44 @@ try {
             deleteDepartment($pdo);
             break;
             
+        // Sites Management
+        case 'getSites':
+            getSites($pdo);
+            break;
+            
+        case 'addSite':
+            addSite($pdo);
+            break;
+            
+        case 'updateSite':
+            updateSite($pdo);
+            break;
+            
+        case 'deleteSite':
+            deleteSite($pdo);
+            break;
+            
+        case 'toggleSiteStatus':
+            toggleSiteStatus($pdo);
+            break;
+            
+        // Issuance Types Management
+        case 'getIssuanceTypes':
+            getIssuanceTypes($pdo);
+            break;
+            
+        case 'addIssuanceType':
+            addIssuanceType($pdo);
+            break;
+            
+        case 'updateIssuanceType':
+            updateIssuanceType($pdo);
+            break;
+            
+        case 'deleteIssuanceType':
+            deleteIssuanceType($pdo);
+            break;
+            
         // Role Permissions
         case 'getRolePermissions':
             getRolePermissions($pdo);
@@ -450,6 +488,333 @@ function deleteDepartment($pdo) {
         
     } catch (PDOException $e) {
         sendResponse(false, 'Failed to delete department: ' . $e->getMessage());
+    }
+}
+
+// ==================== SITES FUNCTIONS ====================
+
+function getSites($pdo) {
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM sites ORDER BY created_at DESC");
+        $stmt->execute();
+        $sites = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        sendResponse(true, 'Sites retrieved successfully', $sites);
+        
+    } catch (PDOException $e) {
+        sendResponse(false, 'Failed to retrieve sites: ' . $e->getMessage());
+    }
+}
+
+function addSite($pdo) {
+    try {
+        $siteName = trim($_POST['site_name'] ?? '');
+        $location = trim($_POST['location'] ?? '');
+        $isActive = isset($_POST['is_active']) ? (int)$_POST['is_active'] : 1;
+        
+        if (empty($siteName)) {
+            sendResponse(false, 'Site name is required');
+        }
+        
+        if (empty($location)) {
+            sendResponse(false, 'Location is required');
+        }
+        
+        // Check if site already exists
+        $stmt = $pdo->prepare("SELECT id FROM sites WHERE site_name = ?");
+        $stmt->execute([$siteName]);
+        if ($stmt->fetch()) {
+            sendResponse(false, 'A site with this name already exists');
+        }
+        
+        $stmt = $pdo->prepare("
+            INSERT INTO sites (site_name, location, is_active, created_at) 
+            VALUES (?, ?, ?, NOW())
+        ");
+        $stmt->execute([$siteName, $location, $isActive]);
+        
+        $newId = $pdo->lastInsertId();
+        
+        // Get the newly created site
+        $stmt = $pdo->prepare("SELECT * FROM sites WHERE id = ?");
+        $stmt->execute([$newId]);
+        $newSite = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        sendResponse(true, 'Site added successfully', $newSite);
+        
+    } catch (PDOException $e) {
+        sendResponse(false, 'Failed to add site: ' . $e->getMessage());
+    }
+}
+
+function updateSite($pdo) {
+    try {
+        $id = $_POST['id'] ?? '';
+        $siteName = trim($_POST['site_name'] ?? '');
+        $location = trim($_POST['location'] ?? '');
+        $isActive = isset($_POST['is_active']) ? (int)$_POST['is_active'] : 1;
+        
+        if (empty($id)) {
+            sendResponse(false, 'Site ID is required');
+        }
+        
+        if (empty($siteName)) {
+            sendResponse(false, 'Site name is required');
+        }
+        
+        if (empty($location)) {
+            sendResponse(false, 'Location is required');
+        }
+        
+        // Check if site exists
+        $stmt = $pdo->prepare("SELECT id FROM sites WHERE id = ?");
+        $stmt->execute([$id]);
+        if (!$stmt->fetch()) {
+            sendResponse(false, 'Site not found');
+        }
+        
+        // Check if another site has the same name
+        $stmt = $pdo->prepare("SELECT id FROM sites WHERE site_name = ? AND id != ?");
+        $stmt->execute([$siteName, $id]);
+        if ($stmt->fetch()) {
+            sendResponse(false, 'Another site with this name already exists');
+        }
+        
+        $stmt = $pdo->prepare("
+            UPDATE sites 
+            SET site_name = ?, location = ?, is_active = ?
+            WHERE id = ?
+        ");
+        $stmt->execute([$siteName, $location, $isActive, $id]);
+        
+        // Get the updated site
+        $stmt = $pdo->prepare("SELECT * FROM sites WHERE id = ?");
+        $stmt->execute([$id]);
+        $updatedSite = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        sendResponse(true, 'Site updated successfully', $updatedSite);
+        
+    } catch (PDOException $e) {
+        sendResponse(false, 'Failed to update site: ' . $e->getMessage());
+    }
+}
+
+function deleteSite($pdo) {
+    try {
+        $id = $_POST['id'] ?? $_GET['id'] ?? '';
+        
+        if (empty($id)) {
+            sendResponse(false, 'Site ID is required');
+        }
+        
+        // Check if site exists
+        $stmt = $pdo->prepare("SELECT site_name FROM sites WHERE id = ?");
+        $stmt->execute([$id]);
+        $site = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$site) {
+            sendResponse(false, 'Site not found');
+        }
+        
+        // Check if site is being used by any employees
+        $tableCheck = $pdo->query("SHOW TABLES LIKE 'employees'");
+        if ($tableCheck->rowCount() > 0) {
+            $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM employees WHERE site_id = ?");
+            $stmt->execute([$id]);
+            $count = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+            
+            if ($count > 0) {
+                sendResponse(false, 'Cannot delete site: It is assigned to ' . $count . ' employee(s)');
+            }
+        }
+        
+        $stmt = $pdo->prepare("DELETE FROM sites WHERE id = ?");
+        $stmt->execute([$id]);
+        
+        sendResponse(true, 'Site "' . $site['site_name'] . '" deleted successfully');
+        
+    } catch (PDOException $e) {
+        sendResponse(false, 'Failed to delete site: ' . $e->getMessage());
+    }
+}
+
+function toggleSiteStatus($pdo) {
+    try {
+        $id = $_POST['id'] ?? '';
+        
+        if (empty($id)) {
+            sendResponse(false, 'Site ID is required');
+        }
+        
+        // Get current status
+        $stmt = $pdo->prepare("SELECT is_active FROM sites WHERE id = ?");
+        $stmt->execute([$id]);
+        $site = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$site) {
+            sendResponse(false, 'Site not found');
+        }
+        
+        // Toggle status
+        $newStatus = $site['is_active'] == 1 ? 0 : 1;
+        
+        $stmt = $pdo->prepare("
+            UPDATE sites 
+            SET is_active = ?
+            WHERE id = ?
+        ");
+        $stmt->execute([$newStatus, $id]);
+        
+        $statusText = $newStatus == 1 ? 'activated' : 'deactivated';
+        sendResponse(true, 'Site ' . $statusText . ' successfully', ['is_active' => $newStatus]);
+        
+    } catch (PDOException $e) {
+        sendResponse(false, 'Failed to toggle status: ' . $e->getMessage());
+    }
+}
+
+// ==================== ISSUANCE TYPES FUNCTIONS ====================
+
+function getIssuanceTypes($pdo) {
+    try {
+        $stmt = $pdo->prepare("SELECT * FROM issuance_types ORDER BY created_at DESC");
+        $stmt->execute();
+        $types = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        sendResponse(true, 'Issuance types retrieved successfully', $types);
+        
+    } catch (PDOException $e) {
+        sendResponse(false, 'Failed to retrieve issuance types: ' . $e->getMessage());
+    }
+}
+
+function addIssuanceType($pdo) {
+    try {
+        $typeName = trim($_POST['type_name'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        
+        if (empty($typeName)) {
+            sendResponse(false, 'Type name is required');
+        }
+        
+        if (empty($description)) {
+            sendResponse(false, 'Description is required');
+        }
+        
+        // Check if type already exists
+        $stmt = $pdo->prepare("SELECT id FROM issuance_types WHERE type_name = ?");
+        $stmt->execute([$typeName]);
+        if ($stmt->fetch()) {
+            sendResponse(false, 'An issuance type with this name already exists');
+        }
+        
+        $stmt = $pdo->prepare("
+            INSERT INTO issuance_types (type_name, description, created_at) 
+            VALUES (?, ?, NOW())
+        ");
+        $stmt->execute([$typeName, $description]);
+        
+        $newId = $pdo->lastInsertId();
+        
+        // Get the newly created type
+        $stmt = $pdo->prepare("SELECT * FROM issuance_types WHERE id = ?");
+        $stmt->execute([$newId]);
+        $newType = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        sendResponse(true, 'Issuance type added successfully', $newType);
+        
+    } catch (PDOException $e) {
+        sendResponse(false, 'Failed to add issuance type: ' . $e->getMessage());
+    }
+}
+
+function updateIssuanceType($pdo) {
+    try {
+        $id = $_POST['id'] ?? '';
+        $typeName = trim($_POST['type_name'] ?? '');
+        $description = trim($_POST['description'] ?? '');
+        
+        if (empty($id)) {
+            sendResponse(false, 'Issuance type ID is required');
+        }
+        
+        if (empty($typeName)) {
+            sendResponse(false, 'Type name is required');
+        }
+        
+        if (empty($description)) {
+            sendResponse(false, 'Description is required');
+        }
+        
+        // Check if type exists
+        $stmt = $pdo->prepare("SELECT id FROM issuance_types WHERE id = ?");
+        $stmt->execute([$id]);
+        if (!$stmt->fetch()) {
+            sendResponse(false, 'Issuance type not found');
+        }
+        
+        // Check if another type has the same name
+        $stmt = $pdo->prepare("SELECT id FROM issuance_types WHERE type_name = ? AND id != ?");
+        $stmt->execute([$typeName, $id]);
+        if ($stmt->fetch()) {
+            sendResponse(false, 'Another issuance type with this name already exists');
+        }
+        
+        $stmt = $pdo->prepare("
+            UPDATE issuance_types 
+            SET type_name = ?, description = ?, updated_at = NOW()
+            WHERE id = ?
+        ");
+        $stmt->execute([$typeName, $description, $id]);
+        
+        // Get the updated type
+        $stmt = $pdo->prepare("SELECT * FROM issuance_types WHERE id = ?");
+        $stmt->execute([$id]);
+        $updatedType = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        sendResponse(true, 'Issuance type updated successfully', $updatedType);
+        
+    } catch (PDOException $e) {
+        sendResponse(false, 'Failed to update issuance type: ' . $e->getMessage());
+    }
+}
+
+function deleteIssuanceType($pdo) {
+    try {
+        $id = $_POST['id'] ?? $_GET['id'] ?? '';
+        
+        if (empty($id)) {
+            sendResponse(false, 'Issuance type ID is required');
+        }
+        
+        // Check if type exists
+        $stmt = $pdo->prepare("SELECT type_name FROM issuance_types WHERE id = ?");
+        $stmt->execute([$id]);
+        $type = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$type) {
+            sendResponse(false, 'Issuance type not found');
+        }
+        
+        // Check if type is being used in any issuances
+        $tableCheck = $pdo->query("SHOW TABLES LIKE 'issuances'");
+        if ($tableCheck->rowCount() > 0) {
+            $stmt = $pdo->prepare("SELECT COUNT(*) as count FROM issuances WHERE issuance_type_id = ?");
+            $stmt->execute([$id]);
+            $count = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+            
+            if ($count > 0) {
+                sendResponse(false, 'Cannot delete issuance type: It is used in ' . $count . ' issuance record(s)');
+            }
+        }
+        
+        $stmt = $pdo->prepare("DELETE FROM issuance_types WHERE id = ?");
+        $stmt->execute([$id]);
+        
+        sendResponse(true, 'Issuance type "' . $type['type_name'] . '" deleted successfully');
+        
+    } catch (PDOException $e) {
+        sendResponse(false, 'Failed to delete issuance type: ' . $e->getMessage());
     }
 }
 
